@@ -58,8 +58,19 @@ setInterval(updateUptime, 1000); // then every second
 
   function buildField() {
     measureChar();
+    // Read the height target from the stage's CSS min-height (resolved
+    // pixels, stable per viewport) rather than fieldEl.clientHeight — the
+    // latter reflects the explicit height we set at the end of this
+    // function, which would feed back into the next call and grow the
+    // plate by a row on every resize.
+    const stage = fieldEl.parentElement;
+    const stageStyle = stage ? getComputedStyle(stage) : null;
+    const stagePadV = stageStyle
+      ? parseFloat(stageStyle.paddingTop) + parseFloat(stageStyle.paddingBottom)
+      : 0;
+    const stageMinH = stageStyle ? parseFloat(stageStyle.minHeight) : NaN;
     const w = fieldEl.clientWidth || 400;
-    const h = fieldEl.clientHeight || 320;
+    const h = (stageMinH > 0 ? stageMinH - stagePadV : fieldEl.clientHeight) || 320;
     cols = Math.max(20, Math.floor(w / charW));
     // ceil + no trailing \n + explicit height below = the cell grid covers
     // the figure exactly, no blank band at the bottom of the plate.

@@ -602,11 +602,17 @@ setInterval(updateUptime, 1000); // then every second
   }
   // Observe the stage so the field rebuilds whenever its container's size
   // changes — covers layout shifts that don't trigger window resize.
+  // Debounced so a sustained drag doesn't rebuild the cell grid 30+ times
+  // per second; it just fires once after the resize quiets down.
   if (typeof ResizeObserver !== 'undefined' && fieldEl.parentElement) {
     let firstFieldObserve = true;
+    let stageResizeT = null;
     new ResizeObserver(() => {
       if (firstFieldObserve) { firstFieldObserve = false; return; }
-      if (!fieldEl.hidden) buildField();
+      clearTimeout(stageResizeT);
+      stageResizeT = setTimeout(() => {
+        if (!fieldEl.hidden) buildField();
+      }, 150);
     }).observe(fieldEl.parentElement);
   }
   if (computerEl) {

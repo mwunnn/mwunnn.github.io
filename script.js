@@ -58,31 +58,31 @@ setInterval(updateUptime, 1000); // then every second
 
   function buildField() {
     measureChar();
-    // Read the height target from stable, CSS-driven inputs (min-height
-    // and aspect-ratio) rather than fieldEl.clientHeight. clientHeight
-    // reflects the explicit height we set at the end of this function,
-    // which would feed back into the next call and grow the plate by a
-    // row on every resize. Width is always stable (we never set explicit
-    // width), so for aspect-ratio we derive height from width.
+    // Trust the browser. We read stage.clientHeight directly — the
+    // already-laid-out value — instead of trying to reconstruct what
+    // the stage's height should be from its computed min-height +
+    // aspect-ratio. That reconstruction worked most of the time but
+    // could drift slightly on resize, leaving the field at a different
+    // size than a fresh page load at the same viewport.
+    //
+    // To keep this read free of any feedback loop, we use Math.floor
+    // for rows. That guarantees rows*charH ≤ stage's content area, so
+    // the explicit field height we set at the end of this function
+    // can never push the stage past its CSS-derived size and feed
+    // the next read. Tradeoff: a small symmetric gap (< 1 row) above
+    // and below the cell grid — but it's identical fresh-vs-resize.
     const stage = fieldEl.parentElement;
-    const stageStyle = stage ? getComputedStyle(stage) : null;
-    const stagePadV = stageStyle
-      ? parseFloat(stageStyle.paddingTop) + parseFloat(stageStyle.paddingBottom)
-      : 0;
-    const stageMinH = stageStyle ? parseFloat(stageStyle.minHeight) || 0 : 0;
-    let aspectStageH = 0;
-    if (stage && stageStyle && stageStyle.aspectRatio && stageStyle.aspectRatio !== 'auto') {
-      const m = stageStyle.aspectRatio.match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)/);
-      const ratio = m ? parseFloat(m[1]) / parseFloat(m[2]) : parseFloat(stageStyle.aspectRatio);
-      if (ratio > 0) aspectStageH = stage.clientWidth / ratio;
+    let stagePadV = 0;
+    if (stage) {
+      const cs = getComputedStyle(stage);
+      stagePadV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
     }
-    const stageOuterH = Math.max(stageMinH, aspectStageH);
     const w = fieldEl.clientWidth || 400;
-    const h = (stageOuterH > 0 ? stageOuterH - stagePadV : fieldEl.clientHeight) || 320;
+    const h = stage
+      ? Math.max(0, stage.clientHeight - stagePadV)
+      : (fieldEl.clientHeight || 320);
     const newCols = Math.max(20, Math.floor(w / charW));
-    // ceil + no trailing \n + explicit height below = the cell grid covers
-    // the figure exactly, no blank band at the bottom of the plate.
-    const newRows = Math.max(8, Math.ceil(h / charH));
+    const newRows = Math.max(8, Math.floor(h / charH));
     // Skip the expensive DOM rebuild when the grid dimensions haven't
     // actually changed — most resize movements stay in the same bucket,
     // so this turns the common case into a near-instant no-op.

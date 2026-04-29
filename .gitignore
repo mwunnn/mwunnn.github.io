@@ -1,0 +1,29 @@
+# =====================================================
+# .gitignore — files git should NOT track
+# Lines starting with # are comments.
+# =====================================================
+
+# macOS metadata files (created automatically by Finder)
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows metadata files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Editor / IDE folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.log
+*.tmp
+
+# Node modules — only relevant if you ever add a build step.
+# Safe to leave here so it's ready if you do.
+node_modules/

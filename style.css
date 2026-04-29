@@ -1,0 +1,711 @@
+/* =========================================================
+   STYLE.CSS — Personal Site
+   Organised in numbered sections so it's easy to navigate.
+   Tip: in most editors, Ctrl/Cmd+F and search "===" to
+   jump between sections.
+   ========================================================= */
+
+/* =========================================================
+   1. DESIGN TOKENS
+   Storing colors and fonts as CSS variables means you can
+   change them in ONE place and the whole site updates.
+   Get in this habit early.
+   ========================================================= */
+:root {
+  --ink: #0a0a0a;
+  --paper: #f4f1ea;
+  --paper-edge: #e6e0d0;
+  --serif-display: 'DM Serif Display', Georgia, serif;
+  --serif-body: 'EB Garamond', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* =========================================================
+   2. RESET & BASE
+   A small reset so different browsers start from the same
+   baseline. The * selector targets every element.
+   ========================================================= */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif-body);
+  font-size: 19px;
+  line-height: 1.5;
+  /* Subtle paper grain — a dot pattern at low opacity */
+  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+  overflow-x: hidden;
+  /* Containing block for the scattered background-glyph layer below */
+  position: relative;
+}
+
+/* SVGs inherit the ink color automatically */
+svg { fill: var(--ink); }
+
+/* =========================================================
+   3. PAGE FRAME + CROP MARKS
+   ========================================================= */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 28px 48px 80px;
+  position: relative;
+  /* Sit above the scattered background-glyph layer */
+  z-index: 1;
+}
+
+.crop { position: absolute; width: 22px; height: 22px; pointer-events: none; }
+.crop::before, .crop::after { content: ''; position: absolute; background: var(--ink); }
+.crop.tl { top: 18px; left: 18px; }
+.crop.tl::before { top: 0; left: 0; width: 1px; height: 22px; }
+.crop.tl::after  { top: 0; left: 0; width: 22px; height: 1px; }
+.crop.tr { top: 18px; right: 18px; }
+.crop.tr::before { top: 0; right: 0; width: 1px; height: 22px; }
+.crop.tr::after  { top: 0; right: 0; width: 22px; height: 1px; }
+.crop.bl { bottom: 18px; left: 18px; }
+.crop.bl::before { bottom: 0; left: 0; width: 1px; height: 22px; }
+.crop.bl::after  { bottom: 0; left: 0; width: 22px; height: 1px; }
+.crop.br { bottom: 18px; right: 18px; }
+.crop.br::before { bottom: 0; right: 0; width: 1px; height: 22px; }
+.crop.br::after  { bottom: 0; right: 0; width: 22px; height: 1px; }
+
+/* =========================================================
+   4. UTILITY CLASSES
+   Small reusable bits used in many places.
+   ========================================================= */
+.mono {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Screen-reader-only: hidden visually, but read aloud by assistive tech.
+   Used for the page's h1 since the visible name is ASCII art. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Stepped grayscale strip — the iconic printer test bar */
+.gradient-strip {
+  display: flex;
+  height: 26px;
+  width: 100%;
+  border: 1px solid var(--ink);
+  margin: 28px 0;
+}
+.gradient-strip > div { flex: 1; }
+.gradient-strip.smooth {
+  background: linear-gradient(to right, var(--paper), var(--ink));
+  margin-top: 80px;
+}
+
+/* Reusable line-pattern fills */
+.lines-h {
+  background-image: repeating-linear-gradient(
+    to bottom, var(--ink) 0 2px, transparent 2px 7px
+  );
+}
+.lines-v {
+  background-image: repeating-linear-gradient(
+    to right, var(--ink) 0 2px, transparent 2px 7px
+  );
+}
+.lines-d {
+  background-image: repeating-linear-gradient(
+    45deg, var(--ink) 0 1.5px, transparent 1.5px 7px
+  );
+}
+
+/* =========================================================
+   5. ASCII ART (banner, dividers, illustrations)
+   <pre> tags preserve the spacing of ASCII art exactly.
+   We use overflow-x:auto so big banners don't break mobile.
+   ========================================================= */
+pre.ascii-banner,
+pre.ascii-rule,
+pre.ascii-mac,
+pre.ascii-mailbox,
+pre.ascii-signoff {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.05;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.ascii-banner {
+  margin: 0 0 24px;
+  font-size: clamp(6px, 1.2vw, 11px); /* shrinks on small screens */
+  font-weight: 700;
+}
+.ascii-rule {
+  margin: 64px 0;
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.85;
+}
+.ascii-mac { font-size: 13px; line-height: 1.1; }
+
+/* Hero-main computer — large prominent ASCII illustration that sits below
+   the name banner. Cycles through screen content via JS.
+   Uses a system monospace stack (not JetBrains Mono) because the Google
+   Fonts subset of JetBrains Mono is missing some of the box-drawing,
+   block, and symbol glyphs (♪ █ ░ ║ ═) used in the screens. When those
+   fall back to a different font the advance widths drift and the right
+   borders no longer line up. System mono fonts have all of these at a
+   consistent 1-cell width. */
+.ascii-computer {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Cascadia Mono', monospace;
+  /* Initial font-size is a conservative pre-JS fallback; fitComputer()
+     in script.js measures the live column width and overrides this with
+     an inline style on load and on every resize. */
+  font-size: 11px;
+  line-height: 1.05;
+  white-space: pre;
+  margin: 0;
+  user-select: none;
+  color: var(--ink);
+  display: inline-block;
+  max-width: 100%;
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "calt" 0;
+}
+
+/* Hero computer in menu mode — the screen becomes a navigation widget.
+   Each <a class="menu-item"> wraps a full padded line of the screen so the
+   entire row is a click target. The selected (or hovered) row inverts to
+   give a classic Mac highlight bar. */
+.ascii-computer { outline: none; }
+.ascii-computer:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+.ascii-computer .menu-item {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.ascii-computer .menu-item:hover,
+.ascii-computer .menu-item--selected {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Sidekick pixel character — pixel data via SVG <rect>s, scales crisply
+   via shape-rendering. Three independent loops: idle bob, arm wave, blink. */
+.sidekick {
+  width: 160px;
+  height: auto;
+  display: block;
+  fill: var(--ink);
+  animation: sk-bob 2.4s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+/* Tail wag — pixel-art sprite style. Two frames toggle via opacity with a
+   hard cut (linear timing across a near-instant keyframe transition). */
+.sidekick .sk-arm-a {
+  animation: sk-wag 1.2s linear infinite;
+}
+.sidekick .sk-arm-b {
+  animation: sk-wag 1.2s linear infinite;
+  animation-delay: -0.6s; /* offset half a cycle — opposite phase from frame A */
+}
+.sidekick .sk-eyes {
+  opacity: 0;
+  animation: sk-blink 4.5s steps(1, end) infinite;
+}
+@keyframes sk-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+@keyframes sk-wag {
+  0%, 49.99% { opacity: 1; }
+  50%, 100%  { opacity: 0; }
+}
+@keyframes sk-blink {
+  0%, 95%, 100% { opacity: 0; }
+  96%, 99%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidekick,
+  .sidekick .sk-arm-a,
+  .sidekick .sk-arm-b,
+  .sidekick .sk-eyes { animation: none; }
+  .sidekick .sk-arm-b { opacity: 0; }
+}
+.ascii-mailbox { font-size: 13px; line-height: 1.05; margin-top: 24px; }
+.ascii-signoff { font-size: 11px; text-align: center; margin: 32px 0 16px; }
+
+/* =========================================================
+   6. NAVIGATION
+   ========================================================= */
+.nav-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  padding: 8px 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: 32px;
+}
+.nav-bar a { text-decoration: none; }
+.nav-bar a:hover { background: var(--ink); color: var(--paper); padding: 0 4px; }
+
+/* =========================================================
+   7. HERO
+   ========================================================= */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 24px;
+}
+.hero-main { display: flex; flex-direction: column; }
+.hero-main .ascii-banner { margin: 0; }
+.hero-main .pull-quote { margin-top: auto; }
+.name {
+  font-family: var(--serif-display);
+  font-size: clamp(64px, 11vw, 144px);
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+}
+.name .a-novel {
+  display: inline-block;
+  font-size: 14px;
+  font-style: italic;
+  letter-spacing: 0.3em;
+  vertical-align: super;
+  margin-left: 8px;
+  transform: translateY(-12px);
+}
+.pull-quote {
+  font-family: var(--serif-body);
+  font-style: italic;
+  font-size: 18px;
+  max-width: 520px;
+  padding: 16px 0 0;
+  margin-top: 24px;
+  border-top: 1px solid var(--ink);
+}
+.pull-quote cite {
+  display: block;
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 20px;
+  /* Allow the column to shrink below the computer's intrinsic width.
+     The fitComputer() routine in script.js measures this column on
+     load + resize and picks a font-size that keeps the rendered frame
+     inside it, so we don't need overflow:hidden (which was clipping
+     the right border). */
+  min-width: 0;
+}
+.hero-side .ascii-field-fig { align-self: stretch; }
+.hourglass { width: 40px; height: 52px; }
+
+.repeating-tagline { text-align: right; font-style: italic; }
+.repeating-tagline p { line-height: 1.15; }
+.repeating-tagline p:nth-child(1) { font-size: 22px; }
+.repeating-tagline p:nth-child(2) { font-size: 19px; }
+.repeating-tagline p:nth-child(3) { font-size: 16px; }
+.repeating-tagline p:nth-child(4) { font-size: 14px; }
+.repeating-tagline p:nth-child(5) { font-size: 12px; }
+.repeating-tagline p:nth-child(6) { font-size: 10px; }
+.repeating-tagline p:nth-child(7) { font-size: 8px; }
+.repeating-tagline p:nth-child(8) { font-size: 6px; opacity: 0.7; }
+
+/* =========================================================
+   8. SECTION HEADERS
+   ========================================================= */
+section { margin-top: 64px; }
+.section-head {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  align-items: baseline;
+  gap: 24px;
+  border-top: 1px solid var(--ink);
+  padding-top: 12px;
+  margin-bottom: 32px;
+}
+.section-head .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
+.section-head h2 {
+  font-family: var(--serif-display);
+  font-size: clamp(36px, 4.5vw, 56px);
+  font-weight: 400;
+  line-height: 1;
+}
+.section-head .meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   9. CLASSIC MAC WINDOW
+   Used both for the About card and each project card.
+   The titlebar uses a striped background, like System 1-6.
+   ========================================================= */
+.mac-window {
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.mac-window:hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+.mac-titlebar {
+  border-bottom: 1px solid var(--ink);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  /* The classic pinstripe pattern */
+  background-image: repeating-linear-gradient(
+    to bottom, var(--ink) 0 1px, var(--paper) 1px 3px
+  );
+  min-height: 22px;
+}
+.mac-titlebar .close-box {
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  flex-shrink: 0;
+}
+.mac-titlebar .title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.mac-body {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 32px;
+  align-items: center;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.stats dt { font-weight: 500; }
+.stats dd { font-weight: 400; }
+
+/* =========================================================
+   10. ABOUT
+   ========================================================= */
+.about {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.about p { margin-bottom: 1em; }
+.about p:first-letter {
+  font-family: var(--serif-display);
+  font-size: 3.4em;
+  float: left;
+  line-height: 0.85;
+  margin: 6px 8px 0 0;
+}
+
+/* =========================================================
+   11. WORK GRID (mac windows as cards)
+   ========================================================= */
+.work-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px 24px;
+}
+.work-card .swatch {
+  aspect-ratio: 4 / 3;
+  border-bottom: 1px solid var(--ink);
+}
+.swatch-grad { background: linear-gradient(to bottom, var(--paper), var(--ink)); }
+.swatch-solid { background: var(--ink); }
+.swatch-cross {
+  background-image:
+    repeating-linear-gradient(45deg, var(--ink) 0 2px, transparent 2px 9px),
+    repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 9px);
+}
+.work-card .card-body { padding: 14px 14px 14px; }
+.work-card .label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  opacity: 0.7;
+}
+.work-card .card-title {
+  font-family: var(--serif-display);
+  font-size: 22px;
+  line-height: 1.1;
+  margin: 4px 0 6px;
+}
+.work-card .size { opacity: 0.6; }
+
+/* =========================================================
+   12. WRITING (file-listing aesthetic)
+   ========================================================= */
+.dir-header {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  white-space: pre;
+  overflow-x: auto;
+  margin-bottom: 4px;
+}
+.writing-list { list-style: none; }
+.writing-list li {
+  display: grid;
+  grid-template-columns: 50px 90px 1fr auto;
+  gap: 20px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px dashed var(--ink);
+}
+.writing-list .title {
+  font-family: var(--serif-display);
+  font-size: 22px;
+  line-height: 1.15;
+}
+.writing-list .title a { text-decoration: none; }
+.writing-list .title a:hover { font-style: italic; }
+.writing-list .read { opacity: 0.65; }
+.writing-list .size { opacity: 0.5; }
+
+/* =========================================================
+   13. CONTACT
+   ========================================================= */
+.contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.contact h3 {
+  font-family: var(--serif-display);
+  font-size: clamp(44px, 6vw, 84px);
+  line-height: 0.9;
+  margin-bottom: 8px;
+}
+.contact-list { list-style: none; }
+.contact-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ink);
+  font-size: 17px;
+}
+.contact-list a { text-decoration: none; }
+.contact-list a:hover { font-style: italic; }
+
+/* =========================================================
+   14. FOOTER
+   ========================================================= */
+footer { margin-top: 64px; }
+.footer-meta {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ink);
+}
+
+/* =========================================================
+   15. SPINE TEXT (rotated marginalia)
+   ========================================================= */
+.spine-text {
+  position: absolute;
+  right: -2px;
+  top: 280px;
+  transform: rotate(90deg);
+  transform-origin: top right;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* =========================================================
+   17. INTERACTIVE PLATE (toggleable: field / machine)
+   Lives inside the hero right column. The whole figure is a
+   bordered "panel" — toolbar across the top, stage below.
+   ========================================================= */
+.ascii-field-fig {
+  margin: 0;
+  border: 1px solid var(--ink);
+  background: var(--paper);
+  width: 100%;
+}
+.ascii-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+.ascii-toolbar .caption { opacity: 0.75; }
+.ascii-toggle { display: flex; gap: 0; }
+.ascii-toggle button {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.ascii-toggle button + button { border-left: 0; }
+.ascii-toggle button.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+.ascii-toggle button:hover:not(.active) { background: var(--paper-edge); }
+
+.ascii-stage {
+  position: relative;
+  padding: 14px;
+  min-height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ascii-field {
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.05;
+  white-space: pre;
+  user-select: none;
+  cursor: crosshair;
+  color: var(--ink);
+  letter-spacing: 0;
+  overflow: hidden;
+  width: 100%;
+  align-self: stretch;
+}
+.ascii-field span { display: inline; }
+.ascii-field[hidden] { display: none; }
+
+.ascii-machine {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.05;
+  white-space: pre;
+  margin: 0;
+  user-select: none;
+  color: var(--ink);
+}
+.ascii-machine[hidden] { display: none; }
+
+/* =========================================================
+   16. RESPONSIVE
+   Smaller screens stack the columns and hide some flourishes.
+   ========================================================= */
+/* Hero stacks earlier than the rest of the layout: below ~1100px the left
+   column can't fit the 64-char ASCII banner without scrolling sideways. */
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; gap: 32px; }
+  .hero-side { align-items: flex-start; }
+  .repeating-tagline { text-align: left; }
+}
+@media (max-width: 900px) {
+  .page { padding: 44px 24px 60px; }
+  .about, .contact { grid-template-columns: 1fr; gap: 32px; }
+  .mac-body { grid-template-columns: 1fr; gap: 16px; }
+  .work-grid { grid-template-columns: 1fr 1fr; }
+  .section-head { grid-template-columns: 1fr; gap: 4px; }
+  .writing-list li { grid-template-columns: 36px 1fr; gap: 12px; }
+  .writing-list .date, .writing-list .read { grid-column: 2; }
+  .spine-text { display: none; }
+  .ascii-rule { font-size: 8px; margin: 40px 0; }
+  /* Banner uses pre.ascii-banner selector to match the base rule's
+     (0,1,1) specificity — otherwise the desktop 12px wins on mobile. */
+  pre.ascii-banner { font-size: 8px; }
+  /* Field stage was 360px tall — too dominant on a phone where it
+     pushes the computer and quote below the fold. */
+  .ascii-stage { min-height: 220px; padding: 10px; }
+}
+@media (max-width: 520px) {
+  .work-grid { grid-template-columns: 1fr; }
+  pre.ascii-banner { font-size: 5px; }
+  .ascii-stage { min-height: 180px; }
+}
+
+/* =========================================================
+   18. BACKGROUND GLYPHS (decorative scattered marginalia)
+   A back-most layer of randomly placed ASCII symbols, like
+   ink marks on a printed page. Spans the full document
+   height; populated and re-laid-out by JS on load + resize.
+   ========================================================= */
+.bg-glyphs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.bg-glyphs span {
+  position: absolute;
+  font-family: var(--mono);
+  color: var(--ink);
+  user-select: none;
+  white-space: nowrap;
+  display: block;
+  /* Each glyph's size, opacity, position, and a transform that combines
+     centering (translate -50% -50%) with a small rotation are set inline. */
+}

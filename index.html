@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matthew Trefon — Personal Site</title>
+  <meta name="description" content="A personal website by Matthew Trefon.">
+
+  <!-- Google Fonts: serifs for headers, mono for the printer/terminal voice -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- ============== BACKGROUND GLYPHS (scattered marginalia) ============== -->
+  <div class="bg-glyphs" id="bgGlyphs" aria-hidden="true"></div>
+
+  <div class="page">
+
+    <!-- ============== CROP MARKS (corners of the page) ============== -->
+    <span class="crop tl"></span>
+    <span class="crop tr"></span>
+    <span class="crop bl"></span>
+    <span class="crop br"></span>
+
+    <!-- ============== SPINE TEXT (rotated, runs up the right edge) ============== -->
+    <div class="spine-text">MOD. PORTFOLIO ▮ v2.0 ▮ CIRCA 2026 ▮ SET IN DM SERIF & EB GARAMOND</div>
+
+    <!-- ============== NAV ============== -->
+    <nav class="nav-bar mono">
+      <a href="#about">[01] ABOUT</a>
+      <a href="#work">[02] WORK</a>
+      <a href="#writing">[03] WRITING</a>
+      <a href="#contact">[04] CONTACT</a>
+      <a href="styleguide.html" style="margin-left: auto;">[*] SPECIMEN</a>
+    </nav>
+
+    <!-- ============== HERO ============== -->
+    <header class="hero">
+      <div class="hero-main">
+        <h1 class="sr-only">Matthew Trefon</h1>
+        <pre class="ascii-banner" aria-hidden="true">
+███╗   ███╗ █████╗ ████████╗████████╗██╗  ██╗███████╗██╗    ██╗
+████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██║  ██║██╔════╝██║    ██║
+██╔████╔██║███████║   ██║      ██║   ███████║█████╗  ██║ █╗ ██║
+██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══██║██╔══╝  ██║███╗██║
+██║ ╚═╝ ██║██║  ██║   ██║      ██║   ██║  ██║███████╗╚███╔███╔╝
+╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝
+████████╗██████╗ ███████╗███████╗ ██████╗ ███╗   ██╗
+╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║
+   ██║   ██████╔╝█████╗  █████╗  ██║   ██║██╔██╗ ██║
+   ██║   ██╔══██╗██╔══╝  ██╔══╝  ██║   ██║██║╚██╗██║
+   ██║   ██║  ██║███████╗██║     ╚██████╔╝██║ ╚████║
+   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝
+        </pre>
+        <!-- ============== INTERFERENCE FIELD ============== -->
+        <figure class="ascii-field-fig">
+          <div class="ascii-stage">
+            <div class="ascii-field" id="asciiField" aria-hidden="true"></div>
+          </div>
+        </figure>
+        <p class="pull-quote">
+          “A short, memorable line about who you are or what you make. Keep
+          it under twenty words and let it do the work of an introduction.”
+          <cite>— A FRIEND, SOMEWHERE</cite>
+        </p>
+      </div>
+
+      <aside class="hero-side">
+        <pre class="ascii-computer" id="asciiComputer" role="navigation" aria-label="Computer screen — hover or focus to open the main menu, then arrow keys and Enter to navigate"></pre>
+      </aside>
+    </header>
+
+    <!-- Stepped grayscale strip -->
+    <div class="gradient-strip" aria-hidden="true">
+      <div style="background:#f4f1ea"></div>
+      <div style="background:#dad6c8"></div>
+      <div style="background:#bfbaa8"></div>
+      <div style="background:#a39d8b"></div>
+      <div style="background:#85806f"></div>
+      <div style="background:#686355"></div>
+      <div style="background:#4c483c"></div>
+      <div style="background:#322f26"></div>
+      <div style="background:#1c1a14"></div>
+      <div style="background:#0a0a0a"></div>
+    </div>
+
+    <div class="repeating-tagline" aria-hidden="true">
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+      <p>Designer · Writer · Tinkerer</p>
+    </div>
+
+    <!-- ASCII divider — reusable element you'll see between sections -->
+    <pre class="ascii-rule" aria-hidden="true">
+═══════════════════════════════════════════════════════════════════════════════
+    ◆          ◆          ◆          ◆          ◆          ◆          ◆
+═══════════════════════════════════════════════════════════════════════════════
+    </pre>
+
+    <!-- ============================== ABOUT ============================== -->
+    <section id="about">
+      <div class="section-head">
+        <span class="num">§ 01</span>
+        <h2>About</h2>
+        <span class="meta">Pp. 1–4</span>
+      </div>
+
+      <div class="about">
+        <div>
+          <p>
+            One paragraph that introduces you. Where you live, what you do,
+            and the thread running through it all. Keep it short — first
+            paragraphs do the heavy lifting.
+          </p>
+          <p>
+            A second paragraph for texture. The hobbies, the obsessions, the
+            slightly embarrassing detail you’re proud of. Specifics beat
+            generics every time.
+          </p>
+          <p>
+            A third paragraph that points outward — what you’re curious about
+            now, what you’re reading, what you’d like to be doing more of.
+          </p>
+        </div>
+
+        <!-- Classic Mac window: System 1-style stripes & close box -->
+        <div class="mac-window">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">about_me.txt</span>
+          </div>
+          <div class="mac-body">
+            <!-- Sidekick — pixel data extracted from the box-shadow CSS reference. -->
+            <svg class="sidekick" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-label="Sidekick" role="img">
+              <g class="sk-body">
+                <!-- antennae -->
+                <rect x="6"  y="0"  width="2"  height="3"/>
+                <rect x="14" y="0"  width="2"  height="3"/>
+                <!-- antenna shoulders -->
+                <rect x="6"  y="3"  width="3"  height="1"/>
+                <rect x="13" y="3"  width="3"  height="1"/>
+                <!-- head taper -->
+                <rect x="7"  y="4"  width="9"  height="1"/>
+                <rect x="5"  y="5"  width="12" height="1"/>
+                <rect x="4"  y="6"  width="15" height="1"/>
+                <rect x="3"  y="7"  width="17" height="1"/>
+                <!-- upper body -->
+                <rect x="3"  y="8"  width="18" height="2"/>
+                <!-- eye row body (eyes are gaps; paper shows through) -->
+                <rect x="3"  y="10" width="4"  height="2"/>
+                <rect x="9"  y="10" width="8"  height="2"/>
+                <rect x="19" y="10" width="2"  height="2"/>
+                <!-- mid body rows (without arm parts) -->
+                <rect x="3"  y="12" width="18" height="1"/>
+                <rect x="4"  y="13" width="17" height="1"/>
+                <rect x="5"  y="14" width="15" height="1"/>
+                <rect x="4"  y="15" width="15" height="1"/>
+                <rect x="7"  y="16" width="11" height="1"/>
+                <!-- legs -->
+                <rect x="7"  y="17" width="2"  height="2"/>
+                <rect x="16" y="17" width="2"  height="2"/>
+                <!-- feet -->
+                <rect x="6"  y="19" width="4"  height="2"/>
+                <rect x="15" y="19" width="4"  height="2"/>
+              </g>
+              <!-- Tail — two pixel-art frames; CSS alternates their opacity
+                   for a discrete sprite-style wag (no rotation/easing). -->
+              <g class="sk-arm">
+                <g class="sk-arm-a">
+                  <!-- Frame A: tail curled up, tip at upper-left -->
+                  <rect x="0" y="12" width="1" height="1"/>
+                  <rect x="0" y="13" width="2" height="1"/>
+                  <rect x="1" y="14" width="1" height="1"/>
+                  <rect x="1" y="15" width="1" height="1"/>
+                  <rect x="1" y="16" width="4" height="1"/>
+                </g>
+                <g class="sk-arm-b">
+                  <!-- Frame B: tail flicked down, tip dropped, curl shorter -->
+                  <rect x="0" y="14" width="1" height="1"/>
+                  <rect x="0" y="15" width="2" height="1"/>
+                  <rect x="1" y="16" width="4" height="1"/>
+                </g>
+              </g>
+              <!-- Eye covers — normally invisible; opacity flashes to 1 to blink. -->
+              <g class="sk-eyes">
+                <rect x="7"  y="10" width="2" height="2"/>
+                <rect x="17" y="10" width="2" height="2"/>
+              </g>
+            </svg>
+            <dl class="stats">
+              <dt>STATUS</dt>      <dd>● ONLINE</dd>
+              <dt>LOCATION</dt>    <dd>YOUR CITY</dd>
+              <dt>CURRENTLY</dt>   <dd>BUILDING THINGS</dd>
+              <dt>READING</dt>     <dd>LASERWRITER II</dd>
+              <dt>UPTIME</dt>      <dd id="uptime">--</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <pre class="ascii-rule" aria-hidden="true">
+═══════════════════════════════════════════════════════════════════════════════
+    ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░
+═══════════════════════════════════════════════════════════════════════════════
+    </pre>
+
+    <!-- ============================== WORK ============================== -->
+    <section id="work">
+      <div class="section-head">
+        <span class="num">§ 02</span>
+        <h2>Work</h2>
+        <span class="meta">Selected · 2022–2026</span>
+      </div>
+
+      <div class="work-grid">
+        <!-- Each project card is a tiny Mac window. -->
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">project_01.app</span>
+          </div>
+          <div class="swatch lines-h"></div>
+          <div class="card-body">
+            <div class="label">2026 · PROJECT</div>
+            <div class="card-title">Project Title One</div>
+            <div class="size mono">└─ 142 KB</div>
+          </div>
+        </a>
+
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">website.html</span>
+          </div>
+          <div class="swatch swatch-grad"></div>
+          <div class="card-body">
+            <div class="label">2025 · SITE</div>
+            <div class="card-title">A Quiet Little Website</div>
+            <div class="size mono">└─ 27 KB</div>
+          </div>
+        </a>
+
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">tool.exe</span>
+          </div>
+          <div class="swatch lines-v"></div>
+          <div class="card-body">
+            <div class="label">2025 · TOOL</div>
+            <div class="card-title">Small Useful Tool</div>
+            <div class="size mono">└─ 89 KB</div>
+          </div>
+        </a>
+
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">essay.doc</span>
+          </div>
+          <div class="swatch lines-d"></div>
+          <div class="card-body">
+            <div class="label">2024 · ESSAY</div>
+            <div class="card-title">An Essay With A Long Title</div>
+            <div class="size mono">└─ 12 KB</div>
+          </div>
+        </a>
+
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">talk.pdf</span>
+          </div>
+          <div class="swatch swatch-solid"></div>
+          <div class="card-body">
+            <div class="label">2024 · TALK</div>
+            <div class="card-title">A Talk I Gave Once</div>
+            <div class="size mono">└─ 4 MB</div>
+          </div>
+        </a>
+
+        <a class="mac-window work-card" href="#">
+          <div class="mac-titlebar">
+            <span class="close-box"></span>
+            <span class="title">side.zip</span>
+          </div>
+          <div class="swatch swatch-cross"></div>
+          <div class="card-body">
+            <div class="label">2023 · SIDE</div>
+            <div class="card-title">A Weekend Experiment</div>
+            <div class="size mono">└─ 256 KB</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <pre class="ascii-rule" aria-hidden="true">
+═══════════════════════════════════════════════════════════════════════════════
+   ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪
+═══════════════════════════════════════════════════════════════════════════════
+    </pre>
+
+    <!-- ============================== WRITING ============================== -->
+    <section id="writing">
+      <div class="section-head">
+        <span class="num">§ 03</span>
+        <h2>Writing</h2>
+        <span class="meta">Most Recent First</span>
+      </div>
+
+      <!-- Styled like a classic file directory listing -->
+      <pre class="dir-header mono">
+SIZE    DATE       NAME                                              READ
+────    ─────────  ──────────────────────────────────────────────    ────</pre>
+
+      <ul class="writing-list">
+        <li>
+          <span class="size mono">5K</span>
+          <span class="date mono">04·12·2026</span>
+          <span class="title"><a href="#">▸ Notes on Making Small Things</a></span>
+          <span class="read mono">5 min →</span>
+        </li>
+        <li>
+          <span class="size mono">8K</span>
+          <span class="date mono">02·28·2026</span>
+          <span class="title"><a href="#">▸ Why I Keep a Plain-Text Journal</a></span>
+          <span class="read mono">8 min →</span>
+        </li>
+        <li>
+          <span class="size mono">3K</span>
+          <span class="date mono">01·09·2026</span>
+          <span class="title"><a href="#">▸ An Argument for Boring Tools</a></span>
+          <span class="read mono">3 min →</span>
+        </li>
+        <li>
+          <span class="size mono">6K</span>
+          <span class="date mono">11·22·2025</span>
+          <span class="title"><a href="#">▸ The First Thing I Built That Worked</a></span>
+          <span class="read mono">6 min →</span>
+        </li>
+        <li>
+          <span class="size mono">4K</span>
+          <span class="date mono">10·03·2025</span>
+          <span class="title"><a href="#">▸ A Field Guide to My Bookmarks</a></span>
+          <span class="read mono">4 min →</span>
+        </li>
+      </ul>
+    </section>
+
+    <pre class="ascii-rule" aria-hidden="true">
+═══════════════════════════════════════════════════════════════════════════════
+        ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░
+═══════════════════════════════════════════════════════════════════════════════
+    </pre>
+
+    <!-- ============================== CONTACT ============================== -->
+    <section id="contact">
+      <div class="section-head">
+        <span class="num">§ 04</span>
+        <h2>Contact</h2>
+        <span class="meta">Say Hello</span>
+      </div>
+
+      <div class="contact">
+        <div>
+          <h3>Get<br><em>in touch.</em></h3>
+<pre class="ascii-mailbox" aria-hidden="true">
+       _______________
+      |  ___________  |
+      | |           | |
+      | |   YOU     | |
+      | |   GOT     | |
+      | |   MAIL!   | |
+      | |___________| |
+      |_______________|
+         ||       ||
+         ||       ||
+        /__\     /__\
+</pre>
+        </div>
+        <ul class="contact-list">
+          <li><span class="label mono">EMAIL</span><a href="mailto:you@example.com">you@example.com</a></li>
+          <li><span class="label mono">GITHUB</span><a href="#">@yourhandle</a></li>
+          <li><span class="label mono">ARE.NA</span><a href="#">@yourhandle</a></li>
+          <li><span class="label mono">MASTODON</span><a href="#">@you@instance.social</a></li>
+          <li><span class="label mono">RSS</span><a href="#">/feed.xml</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Closing gradient bar -->
+    <div class="gradient-strip smooth" aria-hidden="true"></div>
+
+    <!-- ============================== FOOTER ============================== -->
+    <footer>
+<pre class="ascii-signoff" aria-hidden="true">
+       ╔══════════════════════════════════════════════════════════╗
+       ║   THANKS FOR VISITING ▪ MADE BY HAND ▪ NO ROBOTS HARMED  ║
+       ╚══════════════════════════════════════════════════════════╝
+                              ▼  ▼  ▼
+                              END OF FILE
+</pre>
+      <div class="footer-meta mono">
+        <span>© 2026 · MATTHEW TREFON</span>
+        <span>VISITOR #<span id="visitor">00042</span></span>
+        <span>END OF JOB ▮</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

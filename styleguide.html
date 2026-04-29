@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Tells search engines NOT to index this page. Safe to keep public for now. -->
+  <meta name="robots" content="noindex, nofollow">
+
+  <title>Specimen — Matthew Trefon</title>
+  <meta name="description" content="Internal design inventory.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* =========================================================
+       STYLEGUIDE-SPECIFIC STYLES — only used on this page.
+       Kept inline on purpose so they stay scoped to the inventory
+       and don't clutter the main stylesheet.
+       ========================================================= */
+
+    .sg-intro {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      line-height: 1.6;
+      opacity: 0.75;
+      margin: 0 0 56px;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .sg-stamp {
+      align-self: flex-start;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      padding: 4px 10px;
+      border: 1px solid var(--ink);
+      background: var(--paper);
+      transform: rotate(-1.5deg);
+    }
+
+    /* Two-column row: tag/label on left, demo on right */
+    .sg-row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      padding: 28px 0;
+      border-bottom: 1px dashed var(--ink);
+      align-items: start;
+    }
+    .sg-row:last-of-type { border-bottom: 0; }
+    .sg-tag {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      line-height: 1.6;
+      opacity: 0.8;
+    }
+    .sg-tag .sg-name { display: block; font-weight: 700; margin-bottom: 4px; }
+    .sg-tag .note { display: block; font-weight: 400; opacity: 0.65; }
+    .sg-demo { min-width: 0; }
+
+    /* Color swatches */
+    .sg-swatches {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .sg-color { border: 1px solid var(--ink); }
+    .sg-color-chip { height: 120px; border-bottom: 1px solid var(--ink); }
+    .sg-color-meta {
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sg-color-meta .role { font-weight: 700; text-transform: uppercase; }
+    .sg-color-meta .var,
+    .sg-color-meta .hex { opacity: 0.7; text-transform: uppercase; }
+
+    /* Typography specimens */
+    .sg-specimen-display {
+      font-family: var(--serif-display);
+      font-size: 56px;
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
+    .sg-specimen-body { font-family: var(--serif-body); font-size: 19px; line-height: 1.5; }
+    .sg-specimen-mono {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* Pattern fills */
+    .sg-fills {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px 16px;
+    }
+    .sg-fill {
+      aspect-ratio: 4 / 3;
+      border: 1px solid var(--ink);
+    }
+    .sg-fill-label {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-top: 6px;
+      opacity: 0.75;
+    }
+    .sg-fill-cell { display: flex; flex-direction: column; }
+
+    /* Crop mark demo (scoped to a small frame) */
+    .sg-crop-frame {
+      position: relative;
+      width: 100%;
+      max-width: 320px;
+      height: 180px;
+      border: 1px dashed rgba(10, 10, 10, 0.25);
+    }
+    .sg-crop-frame .crop {
+      position: absolute;
+    }
+    .sg-crop-frame .crop.tl { top: 8px;    left: 8px; }
+    .sg-crop-frame .crop.tr { top: 8px;    right: 8px; }
+    .sg-crop-frame .crop.bl { bottom: 8px; left: 8px; }
+    .sg-crop-frame .crop.br { bottom: 8px; right: 8px; }
+
+    /* SVG / icon showcase */
+    .sg-icon-row {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .sg-icon-row .hourglass { width: 40px; height: 52px; }
+    .sg-icon-row .hourglass.lg { width: 80px; height: 104px; }
+
+    .sg-hint {
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.5;
+      margin-top: 10px;
+    }
+
+    /* Hover state demo block */
+    .sg-hover-demo {
+      display: grid;
+      grid-template-columns: repeat(2, max-content);
+      gap: 12px 16px;
+      align-items: center;
+    }
+    .sg-hover-demo a {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 4px 0;
+    }
+    .sg-hover-demo a:hover { background: var(--ink); color: var(--paper); padding: 0 4px; }
+
+    /* Mini work-grid for the styleguide so it doesn't take the whole row */
+    .sg-mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+    /* Generic boxed example */
+    .sg-box {
+      border: 1px solid var(--ink);
+      padding: 16px;
+      background: var(--paper);
+    }
+
+    @media (max-width: 760px) {
+      .sg-row { grid-template-columns: 1fr; gap: 12px; }
+      .sg-swatches, .sg-fills { grid-template-columns: 1fr 1fr; }
+      .sg-mini-grid { grid-template-columns: 1fr; }
+      .sg-specimen-display { font-size: 40px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- CROP MARKS -->
+    <span class="crop tl"></span>
+    <span class="crop tr"></span>
+    <span class="crop bl"></span>
+    <span class="crop br"></span>
+
+    <!-- SPINE TEXT -->
+    <div class="spine-text">PROOF SHEET ▮ INTERNAL ONLY ▮ DO NOT DISTRIBUTE</div>
+
+    <!-- NAV (anchors within page + back to home) -->
+    <nav class="nav-bar mono">
+      <a href="index.html">[←] HOME</a>
+      <a href="#color">[01] COLOR</a>
+      <a href="#type">[02] TYPE</a>
+      <a href="#patterns">[03] PATTERNS</a>
+      <a href="#marks">[04] MARKS</a>
+      <a href="#components">[05] COMPONENTS</a>
+      <a href="#text">[06] TEXT</a>
+      <a href="#ascii">[07] ASCII</a>
+      <a href="#interactive">[08] INTERACTIVE</a>
+    </nav>
+
+    <h1 class="sr-only">Style Guide — Matthew Trefon</h1>
+
+    <!-- TITLE BLOCK -->
+    <div class="section-head" style="margin-bottom: 16px;">
+      <span class="num">§ 00</span>
+      <h2>Specimen.</h2>
+      <span class="meta">Internal · v0.1</span>
+    </div>
+
+    <p class="sg-intro">
+      <span>A visual catalog of every component, color, font, pattern, and decorative element used on this site.</span>
+      <span>Reference material — for laying out new pages, judging consistency, and as an inspiration board.</span>
+      <span>Will be hidden from the public site once the public pages are finalized. The page is already <code style="font-size:10px;">noindex, nofollow</code> — search engines won't list it.</span>
+      <span class="sg-stamp">PROOF — V0.1</span>
+    </p>
+
+    <pre class="ascii-rule" aria-hidden="true">
+═══════════════════════════════════════════════════════════════════════════════
+    ◆          ◆          ◆          ◆          ◆          ◆          ◆
+═══════════════════════════════════════════════════════════════════════════════
+    </pre>
+
+    <!-- ============================== § 01 COLOR ============================== -->
+    <section id="color">
+      <div class="section-head">
+        <span class="num">§ 01</span>
+        <h2>Color</h2>
+        <span class="meta">Tokens · 3</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Palette</span>
+          <span class="note">Defined as CSS variables in <code>:root</code>. Change once, update everywhere.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-swatches">
+            <div class="sg-color">
+              <div class="sg-color-chip" style="background: #0a0a0a;"></div>
+              <div class="sg-color-meta">
+                <span class="role">Ink</span>
+                <span class="var">--ink</span>
+                <span class="hex">#0A0A0A</span>
+              </div>
+            </div>
+            <div class="sg-color">
+              <div class="sg-color-chip" style="background: #f4f1ea;"></div>
+              <div class="sg-color-meta">
+                <span class="role">Paper</span>
+                <span class="var">--paper</span>
+                <span class="hex">#F4F1EA</span>
+              </div>
+            </div>
+            <div class="sg-color">
+              <div class="sg-color-chip" style="background: #e6e0d0;"></div>
+              <div class="sg-color-meta">
+                <span class="role">Paper Edge</span>
+                <span class="var">--paper-edge</span>
+                <span class="hex">#E6E0D0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 02 TYPE ============================== -->
+    <section id="type">
+      <div class="section-head">
+        <span class="num">§ 02</span>
+        <h2>Typography</h2>
+        <span class="meta">Type Stack · 3</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Display</span>
+          <span class="note">DM Serif Display<br>Used for headings, the hero name, and big serif moments.</span>
+        </div>
+        <div class="sg-demo">
+          <p class="sg-specimen-display">A quiet little voice.</p>
+          <p class="sg-hint">--serif-display · 'DM Serif Display'</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Body</span>
+          <span class="note">EB Garamond<br>Used for paragraphs, the pull-quote, and contact lines.</span>
+        </div>
+        <div class="sg-demo">
+          <p class="sg-specimen-body">
+            The quick brown fox jumps over the lazy dog. <em>Italics carry the
+            cadence of a side-note.</em> Numbers like 1234567890 sit nicely
+            alongside ligatures — fi, fl, &amp;c.
+          </p>
+          <p class="sg-hint">--serif-body · 'EB Garamond' · 19px / 1.5</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Mono</span>
+          <span class="note">JetBrains Mono<br>Used for tickets, captions, file paths, technical voice.</span>
+        </div>
+        <div class="sg-demo">
+          <p class="sg-specimen-mono">SYS://YOURNAME.HOME ▮ END OF JOB ▮ 04·12·2026
+[01] ABOUT  [02] WORK  [03] WRITING  [04] CONTACT</p>
+          <p class="sg-hint">--mono · 'JetBrains Mono' · uppercase, tracked</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 03 PATTERNS ============================== -->
+    <section id="patterns">
+      <div class="section-head">
+        <span class="num">§ 03</span>
+        <h2>Patterns &amp; Fills</h2>
+        <span class="meta">Test Patches · 6</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Line Patterns</span>
+          <span class="note">Repeating gradients used as background fills on swatches and panels.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-fills">
+            <div class="sg-fill-cell"><div class="sg-fill lines-h"></div><div class="sg-fill-label">.lines-h · horizontal</div></div>
+            <div class="sg-fill-cell"><div class="sg-fill lines-v"></div><div class="sg-fill-label">.lines-v · vertical</div></div>
+            <div class="sg-fill-cell"><div class="sg-fill lines-d"></div><div class="sg-fill-label">.lines-d · diagonal</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Swatches</span>
+          <span class="note">The fills used inside the work-grid project cards.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-fills">
+            <div class="sg-fill-cell"><div class="sg-fill swatch-grad"></div><div class="sg-fill-label">.swatch-grad</div></div>
+            <div class="sg-fill-cell"><div class="sg-fill swatch-solid"></div><div class="sg-fill-label">.swatch-solid</div></div>
+            <div class="sg-fill-cell"><div class="sg-fill swatch-cross"></div><div class="sg-fill-label">.swatch-cross</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 04 MARKS ============================== -->
+    <section id="marks">
+      <div class="section-head">
+        <span class="num">§ 04</span>
+        <h2>Decorative Marks</h2>
+        <span class="meta">Print-Shop Conventions</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Crop Marks</span>
+          <span class="note">Pinned to the four corners of the page. Echoes printer registration marks.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-crop-frame">
+            <span class="crop tl"></span>
+            <span class="crop tr"></span>
+            <span class="crop bl"></span>
+            <span class="crop br"></span>
+          </div>
+          <p class="sg-hint">.crop.tl / .tr / .bl / .br — absolutely positioned</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Stepped Gradient</span>
+          <span class="note">The iconic printer calibration bar. 10 hard steps, paper → ink.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="gradient-strip" aria-hidden="true">
+            <div style="background:#f4f1ea"></div>
+            <div style="background:#dad6c8"></div>
+            <div style="background:#bfbaa8"></div>
+            <div style="background:#a39d8b"></div>
+            <div style="background:#85806f"></div>
+            <div style="background:#686355"></div>
+            <div style="background:#4c483c"></div>
+            <div style="background:#322f26"></div>
+            <div style="background:#1c1a14"></div>
+            <div style="background:#0a0a0a"></div>
+          </div>
+          <p class="sg-hint">.gradient-strip</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Smooth Gradient</span>
+          <span class="note">A continuous variant. Used as a closing bar before the footer.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="gradient-strip smooth" aria-hidden="true" style="margin-top: 0;"></div>
+          <p class="sg-hint">.gradient-strip.smooth</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">ASCII Rules</span>
+          <span class="note">Three between-section dividers, in different motifs.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="ascii-rule" aria-hidden="true" style="margin: 12px 0;">═══════════════════════════════════════════════════════════════════════════════
+    ◆          ◆          ◆          ◆          ◆          ◆          ◆
+═══════════════════════════════════════════════════════════════════════════════</pre>
+<pre class="ascii-rule" aria-hidden="true" style="margin: 12px 0;">═══════════════════════════════════════════════════════════════════════════════
+    ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░
+═══════════════════════════════════════════════════════════════════════════════</pre>
+<pre class="ascii-rule" aria-hidden="true" style="margin: 12px 0;">═══════════════════════════════════════════════════════════════════════════════
+        ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░
+═══════════════════════════════════════════════════════════════════════════════</pre>
+          <p class="sg-hint">.ascii-rule (×3 motifs)</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 05 COMPONENTS ============================== -->
+    <section id="components">
+      <div class="section-head">
+        <span class="num">§ 05</span>
+        <h2>Components</h2>
+        <span class="meta">Reusable Blocks</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Mac Window</span>
+          <span class="note">System 1-style frame with pinstripe titlebar and close box. Used for About + Work cards.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="mac-window">
+            <div class="mac-titlebar">
+              <span class="close-box"></span>
+              <span class="title">specimen.txt</span>
+            </div>
+            <div class="mac-body" style="grid-template-columns: 1fr;">
+              <p>This is the body of a Mac window. The titlebar uses repeating
+              horizontal lines to evoke the original System 1–6 aesthetic.</p>
+            </div>
+          </div>
+          <p class="sg-hint">.mac-window > .mac-titlebar + .mac-body — has hover lift</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Work Cards</span>
+          <span class="note">Mac window + swatch + label/title/size. Shown 2-up here.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-mini-grid">
+            <a class="mac-window work-card" href="#">
+              <div class="mac-titlebar">
+                <span class="close-box"></span>
+                <span class="title">project_01.app</span>
+              </div>
+              <div class="swatch lines-h"></div>
+              <div class="card-body">
+                <div class="label">2026 · PROJECT</div>
+                <div class="card-title">A Card With Lines</div>
+                <div class="size mono">└─ 142 KB</div>
+              </div>
+            </a>
+            <a class="mac-window work-card" href="#">
+              <div class="mac-titlebar">
+                <span class="close-box"></span>
+                <span class="title">website.html</span>
+              </div>
+              <div class="swatch swatch-grad"></div>
+              <div class="card-body">
+                <div class="label">2025 · SITE</div>
+                <div class="card-title">A Card With Gradient</div>
+                <div class="size mono">└─ 27 KB</div>
+              </div>
+            </a>
+          </div>
+          <p class="sg-hint">.work-card (extends .mac-window)</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Stats List</span>
+          <span class="note">Two-column key/value list in mono. Used inside the About window.</span>
+        </div>
+        <div class="sg-demo">
+          <dl class="stats">
+            <dt>STATUS</dt>      <dd>● ONLINE</dd>
+            <dt>LOCATION</dt>    <dd>YOUR CITY</dd>
+            <dt>CURRENTLY</dt>   <dd>BUILDING THINGS</dd>
+            <dt>READING</dt>     <dd>LASERWRITER II</dd>
+            <dt>UPTIME</dt>      <dd id="uptime">--</dd>
+          </dl>
+          <p class="sg-hint">.stats > dt + dd · live UPTIME wired via script.js</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Section Header</span>
+          <span class="note">Number, title, meta — separated by a top rule. Anchors every section.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="section-head" style="margin: 0;">
+            <span class="num">§ 99</span>
+            <h2>Demo Heading</h2>
+            <span class="meta">Pp. 1–4</span>
+          </div>
+          <p class="sg-hint">.section-head > .num + h2 + .meta</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 06 TEXT ============================== -->
+    <section id="text">
+      <div class="section-head">
+        <span class="num">§ 06</span>
+        <h2>Text Treatments</h2>
+        <span class="meta">Lists &amp; Quotes</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Pull Quote</span>
+          <span class="note">Italic Garamond, with mono cite line, divided by a 1px rule above.</span>
+        </div>
+        <div class="sg-demo">
+          <p class="pull-quote">
+            "A short, memorable line about who you are or what you make. Keep
+            it under twenty words and let it do the work of an introduction."
+            <cite>— A FRIEND, SOMEWHERE</cite>
+          </p>
+          <p class="sg-hint">.pull-quote &gt; cite</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Drop Cap</span>
+          <span class="note">First letter of the first paragraph in About — large display serif, floated left.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="about" style="grid-template-columns: 1fr;">
+            <div>
+              <p>One paragraph that introduces a section. The drop cap on the
+              first letter pulls the eye in and gives the page a printed-book
+              quality. It's a single CSS rule using <code>::first-letter</code>.</p>
+            </div>
+          </div>
+          <p class="sg-hint">.about p:first-letter</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Writing List</span>
+          <span class="note">Directory-listing layout: size, date, title, read time. Dashed bottom rule.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="dir-header mono">SIZE    DATE       NAME                                              READ
+────    ─────────  ──────────────────────────────────────────────    ────</pre>
+          <ul class="writing-list">
+            <li>
+              <span class="size mono">5K</span>
+              <span class="date mono">04·12·2026</span>
+              <span class="title"><a href="#">▸ Notes on Making Small Things</a></span>
+              <span class="read mono">5 min →</span>
+            </li>
+            <li>
+              <span class="size mono">8K</span>
+              <span class="date mono">02·28·2026</span>
+              <span class="title"><a href="#">▸ A Second Sample Article</a></span>
+              <span class="read mono">8 min →</span>
+            </li>
+          </ul>
+          <p class="sg-hint">.dir-header + .writing-list</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Contact List</span>
+          <span class="note">Label / value pairs separated by a 1px ink rule.</span>
+        </div>
+        <div class="sg-demo">
+          <ul class="contact-list">
+            <li><span class="label mono">EMAIL</span><a href="mailto:you@example.com">you@example.com</a></li>
+            <li><span class="label mono">GITHUB</span><a href="#">@yourhandle</a></li>
+            <li><span class="label mono">RSS</span><a href="#">/feed.xml</a></li>
+          </ul>
+          <p class="sg-hint">.contact-list</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Hover States</span>
+          <span class="note">Hover the links below to preview the inverted/italic treatments.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-hover-demo">
+            <a class="mono" href="#">[01] NAV LINK</a>
+            <span class="sg-hint" style="margin: 0;">→ inverts on hover</span>
+            <a class="mono" href="#" style="font-family: var(--serif-display); font-size: 18px; text-transform: none; letter-spacing: 0; transition: font-style 100ms;">An Article Title</a>
+            <span class="sg-hint" style="margin: 0;">→ italicizes on hover</span>
+          </div>
+          <p class="sg-hint">applied via :hover on .nav-bar a, .writing-list .title a, .contact-list a</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 07 ASCII ============================== -->
+    <section id="ascii">
+      <div class="section-head">
+        <span class="num">§ 07</span>
+        <h2>ASCII Illustrations</h2>
+        <span class="meta">Hand-Set</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Name Banner</span>
+          <span class="note">Block-letter ASCII, ANSI Shadow font. Sits at the top of the home page.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="ascii-banner" aria-hidden="true" style="margin: 0;">
+███╗   ███╗ █████╗ ████████╗████████╗██╗  ██╗███████╗██╗    ██╗
+████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██║  ██║██╔════╝██║    ██║
+██╔████╔██║███████║   ██║      ██║   ███████║█████╗  ██║ █╗ ██║
+██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══██║██╔══╝  ██║███╗██║
+██║ ╚═╝ ██║██║  ██║   ██║      ██║   ██║  ██║███████╗╚███╔███╔╝
+╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝
+████████╗██████╗ ███████╗███████╗ ██████╗ ███╗   ██╗
+╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║
+   ██║   ██████╔╝█████╗  █████╗  ██║   ██║██╔██╗ ██║
+   ██║   ██╔══██╗██╔══╝  ██╔══╝  ██║   ██║██║╚██╗██║
+   ██║   ██║  ██║███████╗██║     ╚██████╔╝██║ ╚████║
+   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝
+</pre>
+          <p class="sg-hint">.ascii-banner</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Mac Illustration</span>
+          <span class="note">Box-drawing icon used inside the About window.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="ascii-mac">
+        ┌──────────────────┐
+        │ ┌──────────────┐ │
+        │ │ ░░░░░░░░░░░░ │ │
+        │ │ ░          ░ │ │
+        │ │ ░  hello!  ░ │ │
+        │ │ ░          ░ │ │
+        │ │ ░░░░░░░░░░░░ │ │
+        │ └──────────────┘ │
+        │      ▔▔▔▔▔       │
+        │   ◯  ◯  ◯  ◯     │
+        └──────────────────┘
+            ╔════════╗
+            ║        ║
+            ╚════════╝
+</pre>
+          <p class="sg-hint">.ascii-mac</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Mailbox</span>
+          <span class="note">Decorative illustration in the Contact section.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="ascii-mailbox" aria-hidden="true">
+       _______________
+      |  ___________  |
+      | |           | |
+      | |   YOU     | |
+      | |   GOT     | |
+      | |   MAIL!   | |
+      | |___________| |
+      |_______________|
+         ||       ||
+         ||       ||
+        /__\     /__\
+</pre>
+          <p class="sg-hint">.ascii-mailbox</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Sign-off</span>
+          <span class="note">End-of-file marker used in the footer.</span>
+        </div>
+        <div class="sg-demo">
+<pre class="ascii-signoff" aria-hidden="true" style="margin: 0;">
+       ╔══════════════════════════════════════════════════════════╗
+       ║   THANKS FOR VISITING ▪ MADE BY HAND ▪ NO ROBOTS HARMED  ║
+       ╚══════════════════════════════════════════════════════════╝
+                              ▼  ▼  ▼
+                              END OF FILE
+</pre>
+          <p class="sg-hint">.ascii-signoff</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== § 08 INTERACTIVE ============================== -->
+    <section id="interactive">
+      <div class="section-head">
+        <span class="num">§ 08</span>
+        <h2>Interactive &amp; Motion</h2>
+        <span class="meta">Wired via script.js</span>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Pixel Hourglass</span>
+          <span class="note">Inline SVG, drawn with 1px rectangles. Susan Kare-flavored.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="sg-icon-row">
+            <svg class="hourglass" viewBox="0 0 14 18" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="2"  y="0"  width="10" height="1" />
+              <rect x="2"  y="17" width="10" height="1" />
+              <rect x="3"  y="1"  width="8"  height="1" />
+              <rect x="3"  y="16" width="8"  height="1" />
+              <rect x="4"  y="2"  width="6"  height="1" />
+              <rect x="5"  y="3"  width="4"  height="1" />
+              <rect x="6"  y="4"  width="2"  height="1" />
+              <rect x="6"  y="9"  width="2"  height="1" />
+              <rect x="5"  y="10" width="4"  height="1" />
+              <rect x="4"  y="11" width="6"  height="1" />
+              <rect x="3"  y="12" width="8"  height="1" />
+              <rect x="3"  y="13" width="8"  height="1" />
+              <rect x="3"  y="14" width="8"  height="1" />
+              <rect x="3"  y="15" width="8"  height="1" />
+            </svg>
+            <svg class="hourglass lg" viewBox="0 0 14 18" shape-rendering="crispEdges" aria-hidden="true">
+              <rect x="2"  y="0"  width="10" height="1" />
+              <rect x="2"  y="17" width="10" height="1" />
+              <rect x="3"  y="1"  width="8"  height="1" />
+              <rect x="3"  y="16" width="8"  height="1" />
+              <rect x="4"  y="2"  width="6"  height="1" />
+              <rect x="5"  y="3"  width="4"  height="1" />
+              <rect x="6"  y="4"  width="2"  height="1" />
+              <rect x="6"  y="9"  width="2"  height="1" />
+              <rect x="5"  y="10" width="4"  height="1" />
+              <rect x="4"  y="11" width="6"  height="1" />
+              <rect x="3"  y="12" width="8"  height="1" />
+              <rect x="3"  y="13" width="8"  height="1" />
+              <rect x="3"  y="14" width="8"  height="1" />
+              <rect x="3"  y="15" width="8"  height="1" />
+            </svg>
+          </div>
+          <p class="sg-hint">.hourglass · default 40×52, .lg 80×104</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Repeating Tagline</span>
+          <span class="note">A line of text echoed at decreasing sizes — direct nod to the LaserWriter II cover.</span>
+        </div>
+        <div class="sg-demo">
+          <div class="repeating-tagline" aria-hidden="true" style="text-align: left;">
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+            <p>Designer · Writer · Tinkerer</p>
+          </div>
+          <p class="sg-hint">.repeating-tagline (8 children, 22px → 6px)</p>
+        </div>
+      </div>
+
+      <div class="sg-row">
+        <div class="sg-tag">
+          <span class="sg-name">Interactive Plate</span>
+          <span class="note">Toggleable: cursor-reactive ASCII field / cycling retro machine.</span>
+        </div>
+        <div class="sg-demo">
+          <figure class="ascii-field-fig" style="margin: 0;">
+            <div class="ascii-toolbar mono">
+              <span class="caption" id="plateCaption">INTERFERENCE FIELD ▮ MOVE YOUR CURSOR</span>
+              <div class="ascii-toggle" role="tablist">
+                <button type="button" data-view="field" class="active" aria-selected="true">FIELD</button>
+                <button type="button" data-view="machine" aria-selected="false">MACHINE</button>
+              </div>
+            </div>
+            <div class="ascii-stage">
+              <div class="ascii-field" id="asciiField" aria-hidden="true"></div>
+              <pre class="ascii-machine" id="asciiMachine" hidden aria-hidden="true"></pre>
+            </div>
+          </figure>
+          <p class="sg-hint">.ascii-field-fig &gt; .ascii-toolbar + .ascii-stage</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CLOSING BAR -->
+    <div class="gradient-strip smooth" aria-hidden="true"></div>
+
+    <!-- FOOTER -->
+    <footer>
+<pre class="ascii-signoff" aria-hidden="true">
+       ╔══════════════════════════════════════════════════════════╗
+       ║              END OF SPECIMEN ▪ INTERNAL ONLY             ║
+       ╚══════════════════════════════════════════════════════════╝
+                              ▼  ▼  ▼
+                              EOF
+</pre>
+      <div class="footer-meta mono">
+        <span>© 2026 · MATTHEW TREFON</span>
+        <span>SPECIMEN v0.1</span>
+        <span>END OF JOB ▮</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

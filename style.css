@@ -310,7 +310,7 @@ pre.ascii-signoff {
    ========================================================= */
 .hero {
   display: grid;
-  grid-template-columns: 1fr 1.5fr;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-sm);
   align-items: stretch;
   margin-bottom: var(--space-md);
@@ -612,7 +612,7 @@ footer { margin-top: var(--space-2xl); }
    Sizes and gaps scale themselves between viewports.
    Reference points: --bp-lg 1100, --bp-md 900, --bp-sm 540.
    ========================================================= */
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
   .hero-side { align-items: flex-start; }
   .repeating-tagline { text-align: left; }
@@ -620,8 +620,6 @@ footer { margin-top: var(--space-2xl); }
      so it reads as an intentional plate rather than a thin wide strip.
      min-height steps out of the way so aspect-ratio dictates the size. */
   .ascii-stage { aspect-ratio: 1 / 1; min-height: 0; }
-}
-@media (max-width: 900px) {
   .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
   .mac-body { grid-template-columns: 1fr; gap: var(--space-sm); }
   .section-head { grid-template-columns: 1fr; gap: var(--space-3xs); }

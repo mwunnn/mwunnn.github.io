@@ -65,38 +65,18 @@ setInterval(updateUptime, 1000); // then every second
 
   function buildField() {
     measureChar();
-    // Trust the browser. We read stage.clientHeight directly — the
-    // already-laid-out value — instead of trying to reconstruct what
-    // the stage's height should be from its computed min-height +
-    // aspect-ratio. That reconstruction worked most of the time but
-    // could drift slightly on resize, leaving the field at a different
-    // size than a fresh page load at the same viewport.
-    //
-    // To keep this read free of any feedback loop, we use Math.floor
-    // for rows. That guarantees rows*charH ≤ stage's content area, so
-    // the explicit field height we set at the end of this function
-    // can never push the stage past its CSS-derived size and feed
-    // the next read. Tradeoff: a small symmetric gap (< 1 row) above
-    // and below the cell grid — but it's identical fresh-vs-resize.
-    const stage = fieldEl.parentElement;
-    let stagePadV = 0;
-    if (stage) {
-      const cs = getComputedStyle(stage);
-      stagePadV = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
-    }
+    // Stripped-down sizing: just read the field's own dimensions and
+    // fill it with cells. No aspect-ratio detection, no min-height
+    // parsing, no explicit field height — the stage has a fixed CSS
+    // min-height now, so the field's stretched size is stable per
+    // viewport. floor() leaves a small gap below the cells; that's
+    // intentional for now and we'll address it as part of the
+    // responsive pass later.
     const w = fieldEl.clientWidth || 400;
-    const h = stage
-      ? Math.max(0, stage.clientHeight - stagePadV)
-      : (fieldEl.clientHeight || 320);
+    const h = fieldEl.clientHeight || 320;
     const newCols = Math.max(20, Math.floor(w / charW));
     const newRows = Math.max(8, Math.floor(h / charH));
-    // Skip the expensive DOM rebuild when the grid dimensions haven't
-    // actually changed — most resize movements stay in the same bucket,
-    // so this turns the common case into a near-instant no-op.
-    if (cells.length > 0 && cols === newCols && rows === newRows) {
-      fieldEl.style.height = (newRows * charH) + 'px';
-      return;
-    }
+    if (cells.length > 0 && cols === newCols && rows === newRows) return;
     cols = newCols;
     rows = newRows;
     fieldEl.textContent = '';
@@ -112,7 +92,6 @@ setInterval(updateUptime, 1000); // then every second
       if (r < rows - 1) frag.appendChild(document.createTextNode('\n'));
     }
     fieldEl.appendChild(frag);
-    fieldEl.style.height = (rows * charH) + 'px';
     drops.length = 0;
     nextDropAt = 0;
   }

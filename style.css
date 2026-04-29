@@ -4,23 +4,17 @@
    Tip: in most editors, Ctrl/Cmd+F and search "===" to
    jump between sections.
 
-   System: every type and spacing value comes from a token in
-   section 1. New components should reference those tokens
-   instead of raw px so they scale fluidly with the viewport
-   between ~320px and ~1200px without needing media queries.
-   Media queries are reserved for *layout shifts* (column
-   counts, stacking) — see section 16.
+   Currently a fixed full-size layout with no media queries.
+   Tokens in section 1 are fixed pixel values; responsiveness
+   will be layered on top later (clamp() type/spacing,
+   breakpoint stacking, etc.) once the desktop look is locked.
    ========================================================= */
 
 /* =========================================================
    1. DESIGN TOKENS
    Color, type, spacing, layout — all live here. Change a
-   value in this block and the whole site updates.
-
-   Type/spacing tokens use clamp(<min>, <preferred>, <max>):
-   the preferred value scales linearly with viewport between
-   ~320px (min) and ~1200px (max). Use the semantic token
-   (e.g. var(--fs-base)) instead of raw px in new components.
+   value in this block and the whole site updates. New
+   components should reference these tokens instead of raw px.
    ========================================================= */
 :root {
   /* Color */
@@ -33,34 +27,30 @@
   --serif-body: 'EB Garamond', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
 
-  /* Fluid type scale (320 → 1200 viewport).            small → large */
-  --fs-xs:     clamp(0.625rem,  0.23vw + 0.58rem, 0.75rem);    /* 10→12  | tiny labels */
-  --fs-sm:     clamp(0.6875rem, 0.34vw + 0.62rem, 0.875rem);   /* 11→14  | mono captions, meta */
-  --fs-base:   clamp(1rem,      0.34vw + 0.93rem, 1.1875rem);  /* 16→19  | body text */
-  --fs-lg:     clamp(1.125rem,  0.45vw + 1.03rem, 1.375rem);   /* 18→22  | pull-quote, card titles */
-  --fs-xl:     clamp(1.5rem,    0.91vw + 1.32rem, 2rem);       /* 24→32  | small displays */
-  --fs-2xl:    clamp(2rem,      2.73vw + 1.45rem, 3.5rem);     /* 32→56  | section headings */
-  --fs-3xl:    clamp(2.5rem,    5vw    + 1.5rem,  5.25rem);    /* 40→84  | display heading */
-  --fs-banner: clamp(0.375rem,  0.57vw + 0.26rem, 0.6875rem);  /* 6→11   | ASCII banner */
+  /* Type scale (full-size). */
+  --fs-xs:     0.75rem;     /* 12px | tiny labels */
+  --fs-sm:     0.875rem;    /* 14px | mono captions, meta */
+  --fs-base:   1.1875rem;   /* 19px | body text */
+  --fs-lg:     1.375rem;    /* 22px | pull-quote, card titles */
+  --fs-xl:     2rem;        /* 32px | small displays */
+  --fs-2xl:    3.5rem;      /* 56px | section headings */
+  --fs-3xl:    5.25rem;     /* 84px | display heading */
+  --fs-banner: 0.6875rem;   /* 11px | ASCII banner */
 
-  /* Fluid spacing scale (same lock-points as type). */
-  --space-3xs: clamp(0.125rem,  0.11vw + 0.10rem, 0.1875rem);  /* 2→3 */
-  --space-2xs: clamp(0.25rem,   0.23vw + 0.20rem, 0.375rem);   /* 4→6 */
-  --space-xs:  clamp(0.5rem,    0.45vw + 0.41rem, 0.75rem);    /* 8→12 */
-  --space-sm:  clamp(0.75rem,   0.45vw + 0.66rem, 1rem);       /* 12→16 */
-  --space-md:  clamp(1rem,      0.91vw + 0.82rem, 1.5rem);     /* 16→24 */
-  --space-lg:  clamp(1.5rem,    0.91vw + 1.32rem, 2rem);       /* 24→32 */
-  --space-xl:  clamp(2rem,      1.82vw + 1.64rem, 3rem);       /* 32→48 */
-  --space-2xl: clamp(2.5rem,    2.73vw + 1.95rem, 4rem);       /* 40→64 */
-  --space-3xl: clamp(3rem,      3.64vw + 2.27rem, 5rem);       /* 48→80 */
+  /* Spacing scale. */
+  --space-3xs: 0.1875rem;   /* 3px  */
+  --space-2xs: 0.375rem;    /* 6px  */
+  --space-xs:  0.75rem;     /* 12px */
+  --space-sm:  1rem;        /* 16px */
+  --space-md:  1.5rem;      /* 24px */
+  --space-lg:  2rem;        /* 32px */
+  --space-xl:  3rem;        /* 48px */
+  --space-2xl: 4rem;        /* 64px */
+  --space-3xl: 5rem;        /* 80px */
 
   /* Page frame */
-  --page-max:    1200px;
-  --page-pad-x:  clamp(1.25rem, 3.18vw + 0.61rem, 3rem);       /* 20→48 sides */
-
-  /* Layout breakpoints — used in @media queries below.
-     Reference these values when adding new layout shifts.
-     --bp-sm: 540px;  --bp-md: 900px;  --bp-lg: 1100px; */
+  --page-max:   1200px;
+  --page-pad-x: 3rem;       /* 48px sides */
 }
 
 /* =========================================================
@@ -248,7 +238,7 @@ pre.ascii-signoff {
 /* Sidekick pixel character — pixel data via SVG <rect>s, scales crisply
    via shape-rendering. Three independent loops: idle bob, arm wave, blink. */
 .sidekick {
-  width: clamp(120px, 14vw, 160px);
+  width: 160px;
   height: auto;
   display: block;
   fill: var(--ink);
@@ -353,19 +343,18 @@ pre.ascii-signoff {
 .hero-side .ascii-field-fig { align-self: stretch; }
 .hourglass { width: 40px; height: 52px; }
 
-/* Decorative diminishing ladder, now fluid: each line scales with
-   viewport so the cascade fills the column on desktop while the
-   smallest tail still reads at narrow widths. */
+/* Decorative diminishing ladder. Sizes are fixed at full size;
+   scaling will be added back later as part of the responsive pass. */
 .repeating-tagline { text-align: right; font-style: italic; }
 .repeating-tagline p { line-height: 1.15; }
-.repeating-tagline p:nth-child(1) { font-size: clamp(22px, 2.7vw, 36px); }
-.repeating-tagline p:nth-child(2) { font-size: clamp(18px, 2.3vw, 30px); }
-.repeating-tagline p:nth-child(3) { font-size: clamp(15px, 1.9vw, 25px); }
-.repeating-tagline p:nth-child(4) { font-size: clamp(12px, 1.6vw, 21px); }
-.repeating-tagline p:nth-child(5) { font-size: clamp(11px, 1.3vw, 17px); }
-.repeating-tagline p:nth-child(6) { font-size: clamp(9px,  1.1vw, 14px); }
-.repeating-tagline p:nth-child(7) { font-size: clamp(8px,  0.8vw, 11px); }
-.repeating-tagline p:nth-child(8) { font-size: clamp(6px,  0.6vw, 8px); opacity: 0.7; }
+.repeating-tagline p:nth-child(1) { font-size: 36px; }
+.repeating-tagline p:nth-child(2) { font-size: 30px; }
+.repeating-tagline p:nth-child(3) { font-size: 25px; }
+.repeating-tagline p:nth-child(4) { font-size: 21px; }
+.repeating-tagline p:nth-child(5) { font-size: 17px; }
+.repeating-tagline p:nth-child(6) { font-size: 14px; }
+.repeating-tagline p:nth-child(7) { font-size: 11px; }
+.repeating-tagline p:nth-child(8) { font-size: 8px; opacity: 0.7; }
 
 /* =========================================================
    8. SECTION HEADERS
@@ -608,26 +597,11 @@ footer { margin-top: var(--space-2xl); }
 
 /* =========================================================
    16. RESPONSIVE
-   With fluid type/spacing tokens, breakpoints are reserved
-   for *layout shifts* — column counts, stacking, hide/show.
-   Sizes and gaps scale themselves between viewports.
-   Reference points: --bp-lg 1100, --bp-md 900, --bp-sm 540.
+   Currently empty — full-size layout only. Breakpoints will
+   be added back as a separate pass once the desktop look is
+   locked. When they are, reserve them for *layout shifts*
+   (column counts, stacking, hide/show), not size scaling.
    ========================================================= */
-@media (max-width: 900px) {
-  .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
-  .hero-side { align-items: flex-start; }
-  .repeating-tagline { text-align: left; }
-  /* Once the hero stacks, the field is full-width — make it a 1:1 square
-     so it reads as an intentional plate rather than a thin wide strip.
-     min-height steps out of the way so aspect-ratio dictates the size. */
-  .ascii-stage { aspect-ratio: 1 / 1; min-height: 0; }
-  .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
-  .mac-body { grid-template-columns: 1fr; gap: var(--space-sm); }
-  .section-head { grid-template-columns: 1fr; gap: var(--space-3xs); }
-  .writing-list li { grid-template-columns: 36px 1fr; gap: var(--space-xs); }
-  .writing-list .date, .writing-list .read { grid-column: 2; }
-  .spine-text { display: none; }
-}
 
 /* =========================================================
    17. INTERACTIVE PLATE (toggleable: field / machine)
@@ -673,8 +647,7 @@ footer { margin-top: var(--space-2xl); }
 .ascii-stage {
   position: relative;
   padding: var(--space-sm);
-  /* Fluid: 180px on phones → 360px on desktop, no breakpoints needed. */
-  min-height: clamp(180px, 28vw, 360px);
+  min-height: 360px;
   display: flex;
   align-items: center;
   justify-content: center;

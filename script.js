@@ -227,14 +227,24 @@ setInterval(updateUptime, 1000); // then every second
     fieldRAF = null;
   }
 
-  let resizeT = null;
-  window.addEventListener('resize', () => {
-    clearTimeout(resizeT);
-    resizeT = setTimeout(() => {
+  // Schedule a field rebuild on the next animation frame, coalescing
+  // multiple triggers in the same frame. rAF aligns with the browser's
+  // paint cycle so dimensions read inside buildField are always settled,
+  // and the rebuild lands within ~16ms of the resize event instead of
+  // waiting for a debounce timer.
+  let rebuildScheduled = false;
+  function scheduleFieldRebuild() {
+    if (rebuildScheduled) return;
+    rebuildScheduled = true;
+    requestAnimationFrame(() => {
+      rebuildScheduled = false;
       if (!fieldEl.hidden) buildField();
-      fitComputer();
-    }, 50);
-  });
+    });
+  }
+
+  // fitComputer has its own ResizeObserver on .hero-side, so we don't
+  // need to call it here — that observer handles every layout shift.
+  window.addEventListener('resize', scheduleFieldRebuild);
 
   // ---------- HERO COMPUTER ----------
   // Larger ASCII illustration that lives in hero-side and cycles through
@@ -619,17 +629,13 @@ setInterval(updateUptime, 1000); // then every second
   }
   // Observe the stage so the field rebuilds whenever its container's size
   // changes — covers layout shifts that don't trigger window resize.
-  // Debounced so a sustained drag doesn't rebuild the cell grid 30+ times
-  // per second; it just fires once after the resize quiets down.
+  // rAF-throttled (via scheduleFieldRebuild) so a sustained drag coalesces
+  // into one rebuild per paint frame.
   if (typeof ResizeObserver !== 'undefined' && fieldEl.parentElement) {
     let firstFieldObserve = true;
-    let stageResizeT = null;
     new ResizeObserver(() => {
       if (firstFieldObserve) { firstFieldObserve = false; return; }
-      clearTimeout(stageResizeT);
-      stageResizeT = setTimeout(() => {
-        if (!fieldEl.hidden) buildField();
-      }, 50);
+      scheduleFieldRebuild();
     }).observe(fieldEl.parentElement);
   }
   if (computerEl) {

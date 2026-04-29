@@ -45,15 +45,22 @@ setInterval(updateUptime, 1000); // then every second
   let cursorPresence = 0; // 0 = idle, 1 = hover. eased.
 
   function measureChar() {
+    // Probe lives INSIDE the field so it inherits font-family, font-size,
+    // letter-spacing, and line-height through normal CSS — exactly like
+    // the cells will. The previous version copied those props through
+    // getComputedStyle into an inline string, which could drift
+    // (sub-pixel font-size strings, quoted font names, line-height as
+    // multiplier vs px) and produce slightly different metrics
+    // fresh-vs-resize. Position absolute + offscreen keeps it out of
+    // layout flow without disturbing the field.
     const probe = document.createElement('span');
     probe.textContent = 'M';
-    const cs = getComputedStyle(fieldEl);
-    probe.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font-family:${cs.fontFamily};font-size:${cs.fontSize};letter-spacing:${cs.letterSpacing};line-height:${cs.lineHeight};`;
-    document.body.appendChild(probe);
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;left:-9999px;top:-9999px;';
+    fieldEl.appendChild(probe);
     const rect = probe.getBoundingClientRect();
     charW = rect.width || 8;
-    charH = rect.height || (parseFloat(cs.fontSize) * 1.05);
-    probe.remove();
+    charH = rect.height || 14;
+    fieldEl.removeChild(probe);
   }
 
   function buildField() {

@@ -353,18 +353,19 @@ pre.ascii-signoff {
 .hero-side .ascii-field-fig { align-self: stretch; }
 .hourglass { width: 40px; height: 52px; }
 
-/* Decorative diminishing ladder. Sizes are intentionally fixed —
-   the visual rhythm IS the design. */
+/* Decorative diminishing ladder, now fluid: each line scales with
+   viewport so the cascade fills the column on desktop while the
+   smallest tail still reads at narrow widths. */
 .repeating-tagline { text-align: right; font-style: italic; }
 .repeating-tagline p { line-height: 1.15; }
-.repeating-tagline p:nth-child(1) { font-size: 22px; }
-.repeating-tagline p:nth-child(2) { font-size: 19px; }
-.repeating-tagline p:nth-child(3) { font-size: 16px; }
-.repeating-tagline p:nth-child(4) { font-size: 14px; }
-.repeating-tagline p:nth-child(5) { font-size: 12px; }
-.repeating-tagline p:nth-child(6) { font-size: 10px; }
-.repeating-tagline p:nth-child(7) { font-size: 8px; }
-.repeating-tagline p:nth-child(8) { font-size: 6px; opacity: 0.7; }
+.repeating-tagline p:nth-child(1) { font-size: clamp(22px, 2.7vw, 36px); }
+.repeating-tagline p:nth-child(2) { font-size: clamp(18px, 2.3vw, 30px); }
+.repeating-tagline p:nth-child(3) { font-size: clamp(15px, 1.9vw, 25px); }
+.repeating-tagline p:nth-child(4) { font-size: clamp(12px, 1.6vw, 21px); }
+.repeating-tagline p:nth-child(5) { font-size: clamp(11px, 1.3vw, 17px); }
+.repeating-tagline p:nth-child(6) { font-size: clamp(9px,  1.1vw, 14px); }
+.repeating-tagline p:nth-child(7) { font-size: clamp(8px,  0.8vw, 11px); }
+.repeating-tagline p:nth-child(8) { font-size: clamp(6px,  0.6vw, 8px); opacity: 0.7; }
 
 /* =========================================================
    8. SECTION HEADERS

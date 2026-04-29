@@ -625,6 +625,12 @@ footer { margin-top: var(--space-2xl); }
   .writing-list .date, .writing-list .read { grid-column: 2; }
   .spine-text { display: none; }
 }
+@media (max-width: 540px) {
+  /* On phone-sized viewports, fill more of the screen with the field
+     and lock it to a 1:1 square. min-height steps out of the way so
+     aspect-ratio dictates the size. */
+  .ascii-stage { aspect-ratio: 1 / 1; min-height: 0; }
+}
 
 /* =========================================================
    17. INTERACTIVE PLATE (toggleable: field / machine)

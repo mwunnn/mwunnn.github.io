@@ -71,10 +71,19 @@ setInterval(updateUptime, 1000); // then every second
     const stageMinH = stageStyle ? parseFloat(stageStyle.minHeight) : NaN;
     const w = fieldEl.clientWidth || 400;
     const h = (stageMinH > 0 ? stageMinH - stagePadV : fieldEl.clientHeight) || 320;
-    cols = Math.max(20, Math.floor(w / charW));
+    const newCols = Math.max(20, Math.floor(w / charW));
     // ceil + no trailing \n + explicit height below = the cell grid covers
     // the figure exactly, no blank band at the bottom of the plate.
-    rows = Math.max(8, Math.ceil(h / charH));
+    const newRows = Math.max(8, Math.ceil(h / charH));
+    // Skip the expensive DOM rebuild when the grid dimensions haven't
+    // actually changed — most resize movements stay in the same bucket,
+    // so this turns the common case into a near-instant no-op.
+    if (cells.length > 0 && cols === newCols && rows === newRows) {
+      fieldEl.style.height = (newRows * charH) + 'px';
+      return;
+    }
+    cols = newCols;
+    rows = newRows;
     fieldEl.textContent = '';
     cells = [];
     const frag = document.createDocumentFragment();
@@ -216,7 +225,7 @@ setInterval(updateUptime, 1000); // then every second
     resizeT = setTimeout(() => {
       if (!fieldEl.hidden) buildField();
       fitComputer();
-    }, 120);
+    }, 50);
   });
 
   // ---------- HERO COMPUTER ----------
@@ -612,7 +621,7 @@ setInterval(updateUptime, 1000); // then every second
       clearTimeout(stageResizeT);
       stageResizeT = setTimeout(() => {
         if (!fieldEl.hidden) buildField();
-      }, 150);
+      }, 50);
     }).observe(fieldEl.parentElement);
   }
   if (computerEl) {

@@ -616,6 +616,10 @@ footer { margin-top: var(--space-2xl); }
   .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
   .hero-side { align-items: flex-start; }
   .repeating-tagline { text-align: left; }
+  /* Once the hero stacks, the field is full-width — make it a 1:1 square
+     so it reads as an intentional plate rather than a thin wide strip.
+     min-height steps out of the way so aspect-ratio dictates the size. */
+  .ascii-stage { aspect-ratio: 1 / 1; min-height: 0; }
 }
 @media (max-width: 900px) {
   .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
@@ -624,12 +628,6 @@ footer { margin-top: var(--space-2xl); }
   .writing-list li { grid-template-columns: 36px 1fr; gap: var(--space-xs); }
   .writing-list .date, .writing-list .read { grid-column: 2; }
   .spine-text { display: none; }
-}
-@media (max-width: 540px) {
-  /* On phone-sized viewports, fill more of the screen with the field
-     and lock it to a 1:1 square. min-height steps out of the way so
-     aspect-ratio dictates the size. */
-  .ascii-stage { aspect-ratio: 1 / 1; min-height: 0; }
 }
 
 /* =========================================================

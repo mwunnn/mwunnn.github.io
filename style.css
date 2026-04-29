@@ -3,21 +3,64 @@
    Organised in numbered sections so it's easy to navigate.
    Tip: in most editors, Ctrl/Cmd+F and search "===" to
    jump between sections.
+
+   System: every type and spacing value comes from a token in
+   section 1. New components should reference those tokens
+   instead of raw px so they scale fluidly with the viewport
+   between ~320px and ~1200px without needing media queries.
+   Media queries are reserved for *layout shifts* (column
+   counts, stacking) — see section 16.
    ========================================================= */
 
 /* =========================================================
    1. DESIGN TOKENS
-   Storing colors and fonts as CSS variables means you can
-   change them in ONE place and the whole site updates.
-   Get in this habit early.
+   Color, type, spacing, layout — all live here. Change a
+   value in this block and the whole site updates.
+
+   Type/spacing tokens use clamp(<min>, <preferred>, <max>):
+   the preferred value scales linearly with viewport between
+   ~320px (min) and ~1200px (max). Use the semantic token
+   (e.g. var(--fs-base)) instead of raw px in new components.
    ========================================================= */
 :root {
+  /* Color */
   --ink: #0a0a0a;
   --paper: #f4f1ea;
   --paper-edge: #e6e0d0;
+
+  /* Type families */
   --serif-display: 'DM Serif Display', Georgia, serif;
   --serif-body: 'EB Garamond', Georgia, serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Fluid type scale (320 → 1200 viewport).            small → large */
+  --fs-xs:     clamp(0.625rem,  0.23vw + 0.58rem, 0.75rem);    /* 10→12  | tiny labels */
+  --fs-sm:     clamp(0.6875rem, 0.34vw + 0.62rem, 0.875rem);   /* 11→14  | mono captions, meta */
+  --fs-base:   clamp(1rem,      0.34vw + 0.93rem, 1.1875rem);  /* 16→19  | body text */
+  --fs-lg:     clamp(1.125rem,  0.45vw + 1.03rem, 1.375rem);   /* 18→22  | pull-quote, card titles */
+  --fs-xl:     clamp(1.5rem,    0.91vw + 1.32rem, 2rem);       /* 24→32  | small displays */
+  --fs-2xl:    clamp(2rem,      2.73vw + 1.45rem, 3.5rem);     /* 32→56  | section headings */
+  --fs-3xl:    clamp(2.5rem,    5vw    + 1.5rem,  5.25rem);    /* 40→84  | display heading */
+  --fs-banner: clamp(0.375rem,  0.57vw + 0.26rem, 0.6875rem);  /* 6→11   | ASCII banner */
+
+  /* Fluid spacing scale (same lock-points as type). */
+  --space-3xs: clamp(0.125rem,  0.11vw + 0.10rem, 0.1875rem);  /* 2→3 */
+  --space-2xs: clamp(0.25rem,   0.23vw + 0.20rem, 0.375rem);   /* 4→6 */
+  --space-xs:  clamp(0.5rem,    0.45vw + 0.41rem, 0.75rem);    /* 8→12 */
+  --space-sm:  clamp(0.75rem,   0.45vw + 0.66rem, 1rem);       /* 12→16 */
+  --space-md:  clamp(1rem,      0.91vw + 0.82rem, 1.5rem);     /* 16→24 */
+  --space-lg:  clamp(1.5rem,    0.91vw + 1.32rem, 2rem);       /* 24→32 */
+  --space-xl:  clamp(2rem,      1.82vw + 1.64rem, 3rem);       /* 32→48 */
+  --space-2xl: clamp(2.5rem,    2.73vw + 1.95rem, 4rem);       /* 40→64 */
+  --space-3xl: clamp(3rem,      3.64vw + 2.27rem, 5rem);       /* 48→80 */
+
+  /* Page frame */
+  --page-max:    1200px;
+  --page-pad-x:  clamp(1.25rem, 3.18vw + 0.61rem, 3rem);       /* 20→48 sides */
+
+  /* Layout breakpoints — used in @media queries below.
+     Reference these values when adding new layout shifts.
+     --bp-sm: 540px;  --bp-md: 900px;  --bp-lg: 1100px; */
 }
 
 /* =========================================================
@@ -34,7 +77,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--serif-body);
-  font-size: 19px;
+  font-size: var(--fs-base);
   line-height: 1.5;
   /* Subtle paper grain — a dot pattern at low opacity */
   background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
@@ -51,9 +94,9 @@ svg { fill: var(--ink); }
    3. PAGE FRAME + CROP MARKS
    ========================================================= */
 .page {
-  max-width: 1200px;
+  max-width: var(--page-max);
   margin: 0 auto;
-  padding: 28px 48px 80px;
+  padding: var(--space-xl) var(--page-pad-x) var(--space-3xl);
   position: relative;
   /* Sit above the scattered background-glyph layer */
   z-index: 1;
@@ -80,7 +123,7 @@ svg { fill: var(--ink); }
    ========================================================= */
 .mono {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
@@ -105,12 +148,12 @@ svg { fill: var(--ink); }
   height: 26px;
   width: 100%;
   border: 1px solid var(--ink);
-  margin: 28px 0;
+  margin: var(--space-lg) 0;
 }
 .gradient-strip > div { flex: 1; }
 .gradient-strip.smooth {
   background: linear-gradient(to right, var(--paper), var(--ink));
-  margin-top: 80px;
+  margin-top: var(--space-3xl);
 }
 
 /* Reusable line-pattern fills */
@@ -141,24 +184,24 @@ pre.ascii-mac,
 pre.ascii-mailbox,
 pre.ascii-signoff {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.05;
   white-space: pre;
   overflow-x: auto;
 }
 
 .ascii-banner {
-  margin: 0 0 24px;
-  font-size: clamp(6px, 1.2vw, 11px); /* shrinks on small screens */
+  margin: 0 0 var(--space-md);
+  font-size: var(--fs-banner);
   font-weight: 700;
 }
 .ascii-rule {
-  margin: 64px 0;
+  margin: var(--space-2xl) 0;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   opacity: 0.85;
 }
-.ascii-mac { font-size: 13px; line-height: 1.1; }
+.ascii-mac { font-size: var(--fs-sm); line-height: 1.1; }
 
 /* Hero-main computer — large prominent ASCII illustration that sits below
    the name banner. Cycles through screen content via JS.
@@ -205,7 +248,7 @@ pre.ascii-signoff {
 /* Sidekick pixel character — pixel data via SVG <rect>s, scales crisply
    via shape-rendering. Three independent loops: idle bob, arm wave, blink. */
 .sidekick {
-  width: 160px;
+  width: clamp(120px, 14vw, 160px);
   height: auto;
   display: block;
   fill: var(--ink);
@@ -244,8 +287,8 @@ pre.ascii-signoff {
   .sidekick .sk-eyes { animation: none; }
   .sidekick .sk-arm-b { opacity: 0; }
 }
-.ascii-mailbox { font-size: 13px; line-height: 1.05; margin-top: 24px; }
-.ascii-signoff { font-size: 11px; text-align: center; margin: 32px 0 16px; }
+.ascii-mailbox { font-size: var(--fs-sm); line-height: 1.05; margin-top: var(--space-md); }
+.ascii-signoff { font-size: var(--fs-xs); text-align: center; margin: var(--space-xl) 0 var(--space-sm); }
 
 /* =========================================================
    6. NAVIGATION
@@ -253,11 +296,11 @@ pre.ascii-signoff {
 .nav-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 24px;
-  padding: 8px 0;
+  gap: var(--space-2xs) var(--space-md);
+  padding: var(--space-2xs) 0;
   border-top: 1px solid var(--ink);
   border-bottom: 1px solid var(--ink);
-  margin-bottom: 32px;
+  margin-bottom: var(--space-xl);
 }
 .nav-bar a { text-decoration: none; }
 .nav-bar a:hover { background: var(--ink); color: var(--paper); padding: 0 4px; }
@@ -268,52 +311,38 @@ pre.ascii-signoff {
 .hero {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
-  gap: 10px;
+  gap: var(--space-sm);
   align-items: stretch;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-md);
 }
 .hero-main { display: flex; flex-direction: column; }
 .hero-main .ascii-banner { margin: 0; }
 .hero-main .pull-quote { margin-top: auto; }
-.name {
-  font-family: var(--serif-display);
-  font-size: clamp(64px, 11vw, 144px);
-  line-height: 0.88;
-  letter-spacing: -0.02em;
-}
-.name .a-novel {
-  display: inline-block;
-  font-size: 14px;
-  font-style: italic;
-  letter-spacing: 0.3em;
-  vertical-align: super;
-  margin-left: 8px;
-  transform: translateY(-12px);
-}
+
 .pull-quote {
   font-family: var(--serif-body);
   font-style: italic;
-  font-size: 18px;
+  font-size: var(--fs-base);
   max-width: 520px;
-  padding: 16px 0 0;
-  margin-top: 24px;
+  padding: var(--space-md) 0 0;
+  margin-top: var(--space-lg);
   border-top: 1px solid var(--ink);
 }
 .pull-quote cite {
   display: block;
   font-style: normal;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  margin-top: 8px;
+  margin-top: var(--space-xs);
 }
 
 .hero-side {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 20px;
+  gap: var(--space-md);
   /* Allow the column to shrink below the computer's intrinsic width.
      The fitComputer() routine in script.js measures this column on
      load + resize and picks a font-size that keeps the rendered frame
@@ -324,6 +353,8 @@ pre.ascii-signoff {
 .hero-side .ascii-field-fig { align-self: stretch; }
 .hourglass { width: 40px; height: 52px; }
 
+/* Decorative diminishing ladder. Sizes are intentionally fixed —
+   the visual rhythm IS the design. */
 .repeating-tagline { text-align: right; font-style: italic; }
 .repeating-tagline p { line-height: 1.15; }
 .repeating-tagline p:nth-child(1) { font-size: 22px; }
@@ -338,30 +369,30 @@ pre.ascii-signoff {
 /* =========================================================
    8. SECTION HEADERS
    ========================================================= */
-section { margin-top: 64px; }
+section { margin-top: var(--space-2xl); }
 .section-head {
   display: grid;
   grid-template-columns: 80px 1fr auto;
   align-items: baseline;
-  gap: 24px;
+  gap: var(--space-md);
   border-top: 1px solid var(--ink);
-  padding-top: 12px;
-  margin-bottom: 32px;
+  padding-top: var(--space-xs);
+  margin-bottom: var(--space-xl);
 }
 .section-head .num {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.2em;
 }
 .section-head h2 {
   font-family: var(--serif-display);
-  font-size: clamp(36px, 4.5vw, 56px);
+  font-size: var(--fs-2xl);
   font-weight: 400;
   line-height: 1;
 }
 .section-head .meta {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.2em;
   text-transform: uppercase;
 }
@@ -386,7 +417,7 @@ section { margin-top: 64px; }
 }
 .mac-titlebar {
   border-bottom: 1px solid var(--ink);
-  padding: 6px 8px;
+  padding: var(--space-2xs) var(--space-xs);
   display: flex;
   align-items: center;
   position: relative;
@@ -408,26 +439,26 @@ section { margin-top: 64px; }
   left: 50%;
   transform: translateX(-50%);
   background: var(--paper);
-  padding: 0 10px;
+  padding: 0 var(--space-xs);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.05em;
   white-space: nowrap;
 }
 .mac-body {
-  padding: 24px;
+  padding: var(--space-md);
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 32px;
+  gap: var(--space-xl);
   align-items: center;
 }
 
 .stats {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 6px 16px;
+  gap: var(--space-2xs) var(--space-sm);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -440,7 +471,7 @@ section { margin-top: 64px; }
 .about {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  gap: var(--space-xl);
   align-items: start;
 }
 .about p { margin-bottom: 1em; }
@@ -454,11 +485,13 @@ section { margin-top: 64px; }
 
 /* =========================================================
    11. WORK GRID (mac windows as cards)
+   auto-fit + minmax lets the grid pick 1, 2, or 3 columns
+   based on available width — no breakpoint juggling needed.
    ========================================================= */
 .work-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px 24px;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--space-xl) var(--space-md);
 }
 .work-card .swatch {
   aspect-ratio: 4 / 3;
@@ -471,18 +504,18 @@ section { margin-top: 64px; }
     repeating-linear-gradient(45deg, var(--ink) 0 2px, transparent 2px 9px),
     repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 9px);
 }
-.work-card .card-body { padding: 14px 14px 14px; }
+.work-card .card-body { padding: var(--space-sm); }
 .work-card .label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.2em;
   opacity: 0.7;
 }
 .work-card .card-title {
   font-family: var(--serif-display);
-  font-size: 22px;
+  font-size: var(--fs-lg);
   line-height: 1.1;
-  margin: 4px 0 6px;
+  margin: var(--space-3xs) 0 var(--space-2xs);
 }
 .work-card .size { opacity: 0.6; }
 
@@ -491,24 +524,24 @@ section { margin-top: 64px; }
    ========================================================= */
 .dir-header {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: var(--fs-sm);
   letter-spacing: 0.05em;
   white-space: pre;
   overflow-x: auto;
-  margin-bottom: 4px;
+  margin-bottom: var(--space-3xs);
 }
 .writing-list { list-style: none; }
 .writing-list li {
   display: grid;
   grid-template-columns: 50px 90px 1fr auto;
-  gap: 20px;
+  gap: var(--space-md);
   align-items: baseline;
-  padding: 14px 0;
+  padding: var(--space-sm) 0;
   border-bottom: 1px dashed var(--ink);
 }
 .writing-list .title {
   font-family: var(--serif-display);
-  font-size: 22px;
+  font-size: var(--fs-lg);
   line-height: 1.15;
 }
 .writing-list .title a { text-decoration: none; }
@@ -522,22 +555,22 @@ section { margin-top: 64px; }
 .contact {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 48px;
+  gap: var(--space-xl);
   align-items: center;
 }
 .contact h3 {
   font-family: var(--serif-display);
-  font-size: clamp(44px, 6vw, 84px);
+  font-size: var(--fs-3xl);
   line-height: 0.9;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2xs);
 }
 .contact-list { list-style: none; }
 .contact-list li {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: var(--space-sm) 0;
   border-bottom: 1px solid var(--ink);
-  font-size: 17px;
+  font-size: var(--fs-base);
 }
 .contact-list a { text-decoration: none; }
 .contact-list a:hover { font-style: italic; }
@@ -545,13 +578,13 @@ section { margin-top: 64px; }
 /* =========================================================
    14. FOOTER
    ========================================================= */
-footer { margin-top: 64px; }
+footer { margin-top: var(--space-2xl); }
 .footer-meta {
   display: flex;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 16px;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
   border-top: 1px solid var(--ink);
 }
 
@@ -565,11 +598,32 @@ footer { margin-top: 64px; }
   transform: rotate(90deg);
   transform-origin: top right;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.3em;
   text-transform: uppercase;
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* =========================================================
+   16. RESPONSIVE
+   With fluid type/spacing tokens, breakpoints are reserved
+   for *layout shifts* — column counts, stacking, hide/show.
+   Sizes and gaps scale themselves between viewports.
+   Reference points: --bp-lg 1100, --bp-md 900, --bp-sm 540.
+   ========================================================= */
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
+  .hero-side { align-items: flex-start; }
+  .repeating-tagline { text-align: left; }
+}
+@media (max-width: 900px) {
+  .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
+  .mac-body { grid-template-columns: 1fr; gap: var(--space-sm); }
+  .section-head { grid-template-columns: 1fr; gap: var(--space-3xs); }
+  .writing-list li { grid-template-columns: 36px 1fr; gap: var(--space-xs); }
+  .writing-list .date, .writing-list .read { grid-column: 2; }
+  .spine-text { display: none; }
 }
 
 /* =========================================================
@@ -587,23 +641,23 @@ footer { margin-top: 64px; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) var(--space-xs);
   border-bottom: 1px solid var(--ink);
-  font-size: 10px;
+  font-size: var(--fs-xs);
   flex-wrap: wrap;
 }
 .ascii-toolbar .caption { opacity: 0.75; }
 .ascii-toggle { display: flex; gap: 0; }
 .ascii-toggle button {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-xs);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   background: var(--paper);
   color: var(--ink);
   border: 1px solid var(--ink);
-  padding: 4px 10px;
+  padding: var(--space-3xs) var(--space-xs);
   cursor: pointer;
 }
 .ascii-toggle button + button { border-left: 0; }
@@ -615,8 +669,9 @@ footer { margin-top: 64px; }
 
 .ascii-stage {
   position: relative;
-  padding: 14px;
-  min-height: 360px;
+  padding: var(--space-sm);
+  /* Fluid: 180px on phones → 360px on desktop, no breakpoints needed. */
+  min-height: clamp(180px, 28vw, 360px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -624,7 +679,7 @@ footer { margin-top: 64px; }
 
 .ascii-field {
   font-family: var(--mono);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.05;
   white-space: pre;
   user-select: none;
@@ -640,7 +695,7 @@ footer { margin-top: 64px; }
 
 .ascii-machine {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--fs-sm);
   line-height: 1.05;
   white-space: pre;
   margin: 0;
@@ -648,40 +703,6 @@ footer { margin-top: 64px; }
   color: var(--ink);
 }
 .ascii-machine[hidden] { display: none; }
-
-/* =========================================================
-   16. RESPONSIVE
-   Smaller screens stack the columns and hide some flourishes.
-   ========================================================= */
-/* Hero stacks earlier than the rest of the layout: below ~1100px the left
-   column can't fit the 64-char ASCII banner without scrolling sideways. */
-@media (max-width: 1100px) {
-  .hero { grid-template-columns: 1fr; gap: 32px; }
-  .hero-side { align-items: flex-start; }
-  .repeating-tagline { text-align: left; }
-}
-@media (max-width: 900px) {
-  .page { padding: 44px 24px 60px; }
-  .about, .contact { grid-template-columns: 1fr; gap: 32px; }
-  .mac-body { grid-template-columns: 1fr; gap: 16px; }
-  .work-grid { grid-template-columns: 1fr 1fr; }
-  .section-head { grid-template-columns: 1fr; gap: 4px; }
-  .writing-list li { grid-template-columns: 36px 1fr; gap: 12px; }
-  .writing-list .date, .writing-list .read { grid-column: 2; }
-  .spine-text { display: none; }
-  .ascii-rule { font-size: 8px; margin: 40px 0; }
-  /* Banner uses pre.ascii-banner selector to match the base rule's
-     (0,1,1) specificity — otherwise the desktop 12px wins on mobile. */
-  pre.ascii-banner { font-size: 8px; }
-  /* Field stage was 360px tall — too dominant on a phone where it
-     pushes the computer and quote below the fold. */
-  .ascii-stage { min-height: 220px; padding: 10px; }
-}
-@media (max-width: 520px) {
-  .work-grid { grid-template-columns: 1fr; }
-  pre.ascii-banner { font-size: 5px; }
-  .ascii-stage { min-height: 180px; }
-}
 
 /* =========================================================
    18. BACKGROUND GLYPHS (decorative scattered marginalia)

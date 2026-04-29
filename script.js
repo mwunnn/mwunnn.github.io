@@ -61,7 +61,9 @@ setInterval(updateUptime, 1000); // then every second
     const w = fieldEl.clientWidth || 400;
     const h = fieldEl.clientHeight || 320;
     cols = Math.max(20, Math.floor(w / charW));
-    rows = Math.max(8, Math.floor(h / charH));
+    // ceil + no trailing \n + explicit height below = the cell grid covers
+    // the figure exactly, no blank band at the bottom of the plate.
+    rows = Math.max(8, Math.ceil(h / charH));
     fieldEl.textContent = '';
     cells = [];
     const frag = document.createDocumentFragment();
@@ -72,9 +74,10 @@ setInterval(updateUptime, 1000); // then every second
         cells.push({ el: s, c, r, last: ' ' });
         frag.appendChild(s);
       }
-      frag.appendChild(document.createTextNode('\n'));
+      if (r < rows - 1) frag.appendChild(document.createTextNode('\n'));
     }
     fieldEl.appendChild(frag);
+    fieldEl.style.height = (rows * charH) + 'px';
     drops.length = 0;
     nextDropAt = 0;
   }
@@ -581,6 +584,20 @@ setInterval(updateUptime, 1000); // then every second
   // ---------- INIT ----------
   if (cells.length === 0) buildField();
   startField();
+  // Re-measure after web fonts settle — char metrics from the fallback may
+  // not match the loaded font, which would leave the cell grid mis-sized.
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { if (!fieldEl.hidden) buildField(); });
+  }
+  // Observe the stage so the field rebuilds whenever its container's size
+  // changes — covers layout shifts that don't trigger window resize.
+  if (typeof ResizeObserver !== 'undefined' && fieldEl.parentElement) {
+    let firstFieldObserve = true;
+    new ResizeObserver(() => {
+      if (firstFieldObserve) { firstFieldObserve = false; return; }
+      if (!fieldEl.hidden) buildField();
+    }).observe(fieldEl.parentElement);
+  }
   if (computerEl) {
     startMachine();
     fitComputer();

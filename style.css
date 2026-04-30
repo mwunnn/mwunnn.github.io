@@ -298,14 +298,25 @@ svg { fill: var(--ink); }
   .sidekick .sk-eyes { animation: none; }
   .sidekick .sk-arm-b { opacity: 0; }
 }
-/* Hero sidekick — opt out of the column's flex-end alignment so he sits
-   on the left under the diminishing tagline. The negative margin pulls
-   him up to overlap the cascade above. (Reset to 0 in the mobile grid
-   layout, where positioning is handled by grid-area instead.) */
+/* Hero sidekick — opt out of the column's flex-end alignment so he
+   sits on the left under the diminishing tagline. A small negative
+   margin pulls him up to feel "tucked under" the cascade rather than
+   floating below it. Width is fluid so he scales with viewport — at
+   narrow desktop widths the cascade claims more of the half-column,
+   so the bunny shrinks to stay out of its way. (Position is handled
+   by absolute positioning in the mobile layout below.) */
 .hero-side .sidekick {
   align-self: flex-start;
-  margin-top: -150px;
+  margin-top: -50px;
+  width: clamp(100px, 13vw, 160px);
 }
+
+/* Computer: opt out of the column's flex-end alignment too so it
+   centers horizontally instead of right-aligning. At narrow desktops
+   the computer fills the column anyway (fitComputer scales it down);
+   at wider viewports it's smaller than the column, so centering
+   becomes visible. */
+.hero-side .ascii-computer { align-self: center; }
 .ascii-mailbox { font-size: var(--fs-sm); line-height: 1.05; margin-top: var(--space-md); }
 .ascii-signoff { font-size: var(--fs-xs); text-align: center; margin: var(--space-xl) 0 var(--space-sm); }
 
@@ -375,14 +386,14 @@ svg { fill: var(--ink); }
    scaling will be added back later as part of the responsive pass. */
 .repeating-tagline { text-align: right; font-style: italic; }
 .repeating-tagline p { line-height: 1.15; }
-.repeating-tagline p:nth-child(1) { font-size: 36px; }
-.repeating-tagline p:nth-child(2) { font-size: 30px; }
-.repeating-tagline p:nth-child(3) { font-size: 25px; }
-.repeating-tagline p:nth-child(4) { font-size: 21px; }
-.repeating-tagline p:nth-child(5) { font-size: 17px; }
-.repeating-tagline p:nth-child(6) { font-size: 14px; }
-.repeating-tagline p:nth-child(7) { font-size: 11px; }
-.repeating-tagline p:nth-child(8) { font-size: 8px; opacity: 0.7; }
+.repeating-tagline p:nth-child(1) { font-size: 32px; }
+.repeating-tagline p:nth-child(2) { font-size: 26px; }
+.repeating-tagline p:nth-child(3) { font-size: 22px; }
+.repeating-tagline p:nth-child(4) { font-size: 18px; }
+.repeating-tagline p:nth-child(5) { font-size: 15px; }
+.repeating-tagline p:nth-child(6) { font-size: 12px; }
+.repeating-tagline p:nth-child(7) { font-size: 10px; }
+.repeating-tagline p:nth-child(8) { font-size: 7px; opacity: 0.7; }
 
 /* =========================================================
    8. SECTION HEADERS
@@ -654,26 +665,24 @@ footer { margin-top: var(--space-2xl); }
     position: absolute;
     left: 0;
     bottom: 0;
-    /* Fluid: 100px at the small tablet end, scaling up to 160px
-       (the desktop default) as the viewport approaches 900px. The
-       cascade's longest line claims more space at wider viewports,
-       so the bunny can grow without touching the text. */
-    width: clamp(100px, 17vw, 160px);
+    /* Width inherits from the outer .hero-side .sidekick rule
+       (clamp 100px → 160px), so it scales seamlessly across the
+       900px boundary instead of jumping. */
     align-self: auto;        /* override desktop align-self: flex-start */
-    margin-top: 0;           /* override desktop margin-top: -150px */
+    margin-top: 0;           /* override desktop margin-top */
   }
 
   /* Cascade font sizes scale with viewport so the longest line
      ("Designer · Writer · Tinkerer") fits without wrapping at
      narrow widths. Locks at original sizes around 600px viewport. */
-  .repeating-tagline p:nth-child(1) { font-size: clamp(20px, 6vw, 36px); }
-  .repeating-tagline p:nth-child(2) { font-size: clamp(17px, 5vw, 30px); }
-  .repeating-tagline p:nth-child(3) { font-size: clamp(14px, 4.2vw, 25px); }
-  .repeating-tagline p:nth-child(4) { font-size: clamp(12px, 3.5vw, 21px); }
-  .repeating-tagline p:nth-child(5) { font-size: clamp(10px, 2.8vw, 17px); }
-  .repeating-tagline p:nth-child(6) { font-size: clamp(8px, 2.3vw, 14px); }
-  .repeating-tagline p:nth-child(7) { font-size: clamp(6px, 1.8vw, 11px); }
-  .repeating-tagline p:nth-child(8) { font-size: clamp(5px, 1.3vw, 8px); }
+  .repeating-tagline p:nth-child(1) { font-size: clamp(18px, 5.25vw, 32px); }
+  .repeating-tagline p:nth-child(2) { font-size: clamp(15px, 4.4vw, 26px); }
+  .repeating-tagline p:nth-child(3) { font-size: clamp(12px, 3.7vw, 22px); }
+  .repeating-tagline p:nth-child(4) { font-size: clamp(10px, 3vw, 18px); }
+  .repeating-tagline p:nth-child(5) { font-size: clamp(9px, 2.5vw, 15px); }
+  .repeating-tagline p:nth-child(6) { font-size: clamp(7px, 2vw, 12px); }
+  .repeating-tagline p:nth-child(7) { font-size: clamp(5px, 1.6vw, 10px); }
+  .repeating-tagline p:nth-child(8) { font-size: clamp(4px, 1.1vw, 7px); }
 
   /* About / Contact: two-column → stacked */
   .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }

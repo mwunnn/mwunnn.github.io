@@ -708,15 +708,12 @@ footer { margin-top: var(--space-2xl); }
   /* Work grid: 2 columns → 1 (cards become full-width) */
   .work-grid { grid-template-columns: 1fr; }
 
-  /* Sidekick on iPhone: pull him out of the absolute-positioned
-     bottom-left corner (where he'd overlap the cascade) and back
-     into the normal flex flow, centered below the cascade.
-     Smaller width to feel proportional to the phone screen. */
+  /* Sidekick keeps the tablet layout (absolute bottom-left,
+     inherited from the 900px media block) so it stays beside the
+     cascade like in the slim-desktop reference. Just smaller width
+     on iPhone since the cascade claims more of the narrow column. */
   .hero-side > .sidekick {
-    position: static;
-    align-self: center;
-    width: clamp(80px, 22vw, 110px);
-    margin-top: var(--space-sm);
+    width: clamp(50px, 14vw, 90px);
   }
 }
 

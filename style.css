@@ -48,10 +48,10 @@
   --fs-xl:    clamp(1.5rem,    0.91vw + 1.32rem,  2rem);       /* 24 → 32 */
   --fs-2xl:   clamp(2rem,      2.73vw + 1.45rem,  3.5rem);     /* 32 → 56 */
   --fs-3xl:   clamp(2.5rem,    5vw    + 1.5rem,   5.25rem);    /* 40 → 84 */
-  /* Banner is special — 64-char ASCII art won't fit on a
-     phone at any reasonable size, so we'll hide it later
-     and show a serif fallback. */
-  --fs-banner: 0.6875rem;     /* 11px — desktop only */
+  /* Banner: 64-char ASCII art. Aggressively fluid — locks
+     at 6.4px on small phones (still legible as shape, fits
+     a 358px content area at ~246px wide) and 11px on desktop. */
+  --fs-banner: clamp(0.4rem, 1vw, 0.6875rem);  /* ~6.4 → 11 */
 
   /* Fluid spacing scale, same lock-points as type. */
   --space-3xs: clamp(0.125rem, 0.11vw + 0.10rem, 0.1875rem);   /* 2  → 3  */
@@ -184,11 +184,16 @@ svg { fill: var(--ink); }
    <pre> tags preserve the spacing of ASCII art exactly.
    We use overflow-x:auto so big banners don't break mobile.
    ========================================================= */
-pre.ascii-banner,
-pre.ascii-rule,
-pre.ascii-mac,
-pre.ascii-mailbox,
-pre.ascii-signoff {
+/* Default base for all ascii-* <pre> blocks. Class-only selectors
+   here (no `pre.` prefix) so the specificity stays at 0,1,0 — that
+   way the per-block overrides below (.ascii-banner, .ascii-rule)
+   actually win on font-size. The `pre.` prefix used to be here and
+   silently outranked the overrides. */
+.ascii-banner,
+.ascii-rule,
+.ascii-mac,
+.ascii-mailbox,
+.ascii-signoff {
   font-family: var(--mono);
   font-size: var(--fs-sm);
   line-height: 1.05;
@@ -293,6 +298,12 @@ pre.ascii-signoff {
   .sidekick .sk-eyes { animation: none; }
   .sidekick .sk-arm-b { opacity: 0; }
 }
+/* Hero sidekick — opt out of the column's flex-end alignment so he sits
+   on the left under the diminishing tagline. */
+.hero-side .sidekick {
+  align-self: flex-start;
+  margin-top: -100px;
+}
 .ascii-mailbox { font-size: var(--fs-sm); line-height: 1.05; margin-top: var(--space-md); }
 .ascii-signoff { font-size: var(--fs-xs); text-align: center; margin: var(--space-xl) 0 var(--space-sm); }
 
@@ -323,7 +334,6 @@ pre.ascii-signoff {
 }
 .hero-main { display: flex; flex-direction: column; }
 .hero-main .ascii-banner { margin: 0; }
-.hero-main .pull-quote { margin-top: auto; }
 
 .pull-quote {
   font-family: var(--serif-body);
@@ -613,11 +623,51 @@ footer { margin-top: var(--space-2xl); }
 
 /* =========================================================
    16. RESPONSIVE
-   Currently empty — full-size layout only. Breakpoints will
-   be added back as a separate pass once the desktop look is
-   locked. When they are, reserve them for *layout shifts*
-   (column counts, stacking, hide/show), not size scaling.
+   Two breakpoints, designed as a pair.
+
+   Note: type and spacing don't appear here — they're already
+   fluid via the clamp() tokens in section 1. These rules are
+   purely structural: column counts, stacking, hide/show.
+
+   --bp-md (900px): tablet portrait and below. Multi-column
+     layouts collapse to single columns since content can't
+     comfortably fit side-by-side at this width. Spine text
+     marginalia is hidden.
+
+   --bp-sm (540px): phone. Work grid drops to one column.
+     Banner stays visible at every size — its font-size token
+     scales fluidly so it fits the available width.
    ========================================================= */
+@media (max-width: 900px) {
+  /* Hero: two-column → stacked */
+  .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
+  .hero-side { align-items: flex-start; }
+  .repeating-tagline { text-align: left; }
+
+  /* About / Contact: two-column → stacked */
+  .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
+
+  /* Mac-window body (sidekick + stats): stack */
+  .mac-body { grid-template-columns: 1fr; gap: var(--space-sm); }
+
+  /* Work grid: 3 columns → 2 */
+  .work-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Section header (num / title / meta) → stacked */
+  .section-head { grid-template-columns: 1fr; gap: var(--space-3xs); }
+
+  /* Writing list: drop size + date columns into row 2 */
+  .writing-list li { grid-template-columns: 36px 1fr; gap: var(--space-xs); }
+  .writing-list .date, .writing-list .read { grid-column: 2; }
+
+  /* Decorative marginalia: hidden on narrow viewports */
+  .spine-text { display: none; }
+}
+
+@media (max-width: 540px) {
+  /* Work grid: 2 columns → 1 (cards become full-width) */
+  .work-grid { grid-template-columns: 1fr; }
+}
 
 /* =========================================================
    17. INTERACTIVE PLATE (toggleable: field / machine)

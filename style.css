@@ -299,10 +299,12 @@ svg { fill: var(--ink); }
   .sidekick .sk-arm-b { opacity: 0; }
 }
 /* Hero sidekick — opt out of the column's flex-end alignment so he sits
-   on the left under the diminishing tagline. */
+   on the left under the diminishing tagline. The negative margin pulls
+   him up to overlap the cascade above. (Reset to 0 in the mobile grid
+   layout, where positioning is handled by grid-area instead.) */
 .hero-side .sidekick {
   align-self: flex-start;
-  margin-top: -100px;
+  margin-top: -150px;
 }
 .ascii-mailbox { font-size: var(--fs-sm); line-height: 1.05; margin-top: var(--space-md); }
 .ascii-signoff { font-size: var(--fs-xs); text-align: center; margin: var(--space-xl) 0 var(--space-sm); }
@@ -641,8 +643,37 @@ footer { margin-top: var(--space-2xl); }
 @media (max-width: 900px) {
   /* Hero: two-column → stacked */
   .hero { grid-template-columns: 1fr; gap: var(--space-xl); }
-  .hero-side { align-items: flex-start; }
-  .repeating-tagline { text-align: left; }
+
+  /* Hero side: stays a flex column (matches desktop) but with
+     relative positioning so the sidekick can be absolutely
+     anchored bottom-left. This lets the cascade have the full
+     width of .hero-side — a grid column would squeeze it and
+     force "Designer · Writer · Tinkerer" to wrap. */
+  .hero-side { position: relative; }
+  .hero-side > .sidekick {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    /* Fluid: 100px at the small tablet end, scaling up to 160px
+       (the desktop default) as the viewport approaches 900px. The
+       cascade's longest line claims more space at wider viewports,
+       so the bunny can grow without touching the text. */
+    width: clamp(100px, 17vw, 160px);
+    align-self: auto;        /* override desktop align-self: flex-start */
+    margin-top: 0;           /* override desktop margin-top: -150px */
+  }
+
+  /* Cascade font sizes scale with viewport so the longest line
+     ("Designer · Writer · Tinkerer") fits without wrapping at
+     narrow widths. Locks at original sizes around 600px viewport. */
+  .repeating-tagline p:nth-child(1) { font-size: clamp(20px, 6vw, 36px); }
+  .repeating-tagline p:nth-child(2) { font-size: clamp(17px, 5vw, 30px); }
+  .repeating-tagline p:nth-child(3) { font-size: clamp(14px, 4.2vw, 25px); }
+  .repeating-tagline p:nth-child(4) { font-size: clamp(12px, 3.5vw, 21px); }
+  .repeating-tagline p:nth-child(5) { font-size: clamp(10px, 2.8vw, 17px); }
+  .repeating-tagline p:nth-child(6) { font-size: clamp(8px, 2.3vw, 14px); }
+  .repeating-tagline p:nth-child(7) { font-size: clamp(6px, 1.8vw, 11px); }
+  .repeating-tagline p:nth-child(8) { font-size: clamp(5px, 1.3vw, 8px); }
 
   /* About / Contact: two-column → stacked */
   .about, .contact { grid-template-columns: 1fr; gap: var(--space-xl); }
@@ -667,6 +698,11 @@ footer { margin-top: var(--space-2xl); }
 @media (max-width: 540px) {
   /* Work grid: 2 columns → 1 (cards become full-width) */
   .work-grid { grid-template-columns: 1fr; }
+
+  /* Sidekick: hidden at the smallest screens. Even at 100px wide
+     he overlaps the longest cascade line on iPhone — cleaner to
+     give the cascade full clearance here. */
+  .hero-side > .sidekick { display: none; }
 }
 
 /* =========================================================

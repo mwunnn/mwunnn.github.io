@@ -44,6 +44,157 @@ setInterval(updateUptime, 1000); // then every second
   // idle-animation state
   let cursorPresence = 0; // 0 = idle, 1 = hover. eased.
 
+  // Nav-link overlay state. Hovering a nav link fades the water out,
+  // then fades a rotating 3D icon in. The transition is driven by
+  // `iconPresence` (eased 0..1): water_alpha rides the first half,
+  // icon_alpha rides the second half — sequenced, not crossfaded.
+  let activeIcon = null;     // href key (e.g. '#about') or null
+  let iconPresence = 0;      // 0 = water visible, 1 = icon visible. eased.
+  let iconBuffer = null;     // Float32Array(rows*cols) — per-cell icon brightness (z-buffer)
+
+  // Nav-link icons — each is a 2D bitmap extruded into a slab of point
+  // layers along z, then rotated about the y-axis at render time.
+  // Layer count + thickness control how "solid" the slab looks when
+  // tilted; the bitmap itself is the silhouette you see face-on.
+  // ICONS maps a nav href to its compiled point cloud + dimensions.
+  const ICON_THICKNESS = 1.4;    // half-thickness in cell-width units
+  const ICON_DEPTH_LAYERS = 5;   // # of point layers stacked along z
+  const ICON_DENSITY_XY = 4;     // sub-samples per bitmap cell along x & y
+  const ICON_ASPECT = 1.9;       // chars are ~1.9× taller than wide
+  function buildIconPoints(bitmap) {
+    const w = bitmap[0].length;
+    const h = bitmap.length;
+    const pts = [];
+    const step = 1 / ICON_DENSITY_XY;
+    const half = (ICON_DENSITY_XY - 1) / 2;
+    for (let r = 0; r < h; r++) {
+      for (let c = 0; c < w; c++) {
+        if (bitmap[r].charAt(c) !== '@') continue;
+        const xBase = c - (w - 1) / 2;
+        const yBase = r - (h - 1) / 2;
+        for (let dy = 0; dy < ICON_DENSITY_XY; dy++) {
+          for (let dx = 0; dx < ICON_DENSITY_XY; dx++) {
+            const x = xBase + (dx - half) * step;
+            const y = yBase + (dy - half) * step;
+            for (let l = 0; l < ICON_DEPTH_LAYERS; l++) {
+              const z = -ICON_THICKNESS + (2 * ICON_THICKNESS) * l / (ICON_DEPTH_LAYERS - 1);
+              pts.push({ x, y, z });
+            }
+          }
+        }
+      }
+    }
+    return { points: pts, w, h };
+  }
+  // Each icon also declares a `motion` — how it animates while visible:
+  //   'spin' = rotates about y-axis (3D slab feel)
+  //   'bob'  = face-on, translates up/down on a sine wave (gentle hover)
+  const ICONS = {
+    '#about': { ...buildIconPoints([
+      '   @@@@@   ',
+      '  @@   @@  ',
+      '       @@  ',
+      '      @@   ',
+      '     @@    ',
+      '     @@    ',
+      '           ',
+      '     @@    ',
+      '     @@    ',
+    ]), motion: 'spin' },
+    '#resume': { ...buildIconPoints([
+      ' @@@ ',
+      ' @@@ ',
+      ' @@@ ',
+      '  @  ',
+      '  @  ',
+      '  @  ',
+      '  @  ',
+      ' @@@ ',
+      '@@@@@',
+      '@@@@@',
+      '@@@@@',
+      '@@@@@',
+      '@@@@@',
+      '@@@@@',
+      ' @@@ ',
+      ' @@@ ',
+      '  @  ',
+    ]), motion: 'bob' },
+  };
+
+  // Smoothstep — used to split the iconPresence transition cleanly into
+  // a "water leaves" half and an "icon arrives" half.
+  function smoothstep(a, b, x) {
+    if (x <= a) return 0;
+    if (x >= b) return 1;
+    const u = (x - a) / (b - a);
+    return u * u * (3 - 2 * u);
+  }
+
+  // Render the active icon as a point cloud into iconBuffer. For each
+  // point, transform per the icon's motion, project to a cell, write
+  // its depth-derived brightness (greater = closer = brighter). Cells
+  // the icon doesn't touch stay at 0 so water shows through them.
+  function renderIcon(t) {
+    if (!iconBuffer) return;
+    iconBuffer.fill(0);
+    const icon = ICONS[activeIcon];
+    if (!icon) return;
+
+    const cx = (cols - 1) / 2;
+    const cy = (rows - 1) / 2;
+
+    // Fit the slab to ~75% of the field, respecting char aspect (chars
+    // are ~1.9× taller than wide, so y maps to fewer rows than x to
+    // columns for the same visual length).
+    const scaleX = 0.75 * cols / icon.w;
+    const scaleY = 0.75 * rows * ICON_ASPECT / icon.h;
+    const SCALE = Math.min(scaleX, scaleY);
+
+    if (icon.motion === 'bob') {
+      // Face-on, no rotation. y is offset by a sine wave so the icon
+      // hovers gently. Brightness comes straight from each point's z
+      // (z = -ICON_THICKNESS is the front face → brightest).
+      const BOB_OMEGA = 0.00314;   // rad/ms → ~2.0s period
+      const BOB_AMP_ROWS = 1.5;    // ± rows of vertical travel
+      const yOffset = Math.sin(t * BOB_OMEGA) * BOB_AMP_ROWS;
+      const invMaxZ = 0.5 / ICON_THICKNESS;
+      for (let i = 0; i < icon.points.length; i++) {
+        const p = icon.points[i];
+        const cc = Math.round(cx + p.x * SCALE);
+        const cr = Math.round(cy + p.y * SCALE / ICON_ASPECT + yOffset);
+        if (cc < 0 || cc >= cols || cr < 0 || cr >= rows) continue;
+        const idx = cr * cols + cc;
+        const depth01 = 0.5 - p.z * invMaxZ;     // [0, 1], 1 = closest
+        const brightness = 0.6 + depth01 * 0.4;  // [0.6, 1.0]
+        if (brightness > iconBuffer[idx]) iconBuffer[idx] = brightness;
+      }
+      return;
+    }
+
+    // Default: spin about Y. Dynamic max-z so brightness uses the full
+    // [0, 1] range at every rotation — at face-on, only the thickness
+    // contributes; at edge-on, x reaches its max.
+    const angle = -t * 0.0012; // negative = spin the other way
+    const ca = Math.cos(angle), sa = Math.sin(angle);
+    const maxZ = ICON_THICKNESS * Math.abs(ca) + (icon.w / 2) * Math.abs(sa);
+    const invMaxZ = maxZ > 1e-6 ? 0.5 / maxZ : 0;
+    for (let i = 0; i < icon.points.length; i++) {
+      const p = icon.points[i];
+      const xr = p.x * ca + p.z * sa;
+      const zr = -p.x * sa + p.z * ca;
+      const cc = Math.round(cx + xr * SCALE);
+      const cr = Math.round(cy + p.y * SCALE / ICON_ASPECT);
+      if (cc < 0 || cc >= cols || cr < 0 || cr >= rows) continue;
+      const idx = cr * cols + cc;
+      // Keep the slab in the dense half of the ramp so even the back
+      // face reads as "filled" — depth still cues which side is closer.
+      const depth01 = 0.5 - zr * invMaxZ;       // [0, 1], 1 = closest
+      const brightness = 0.6 + depth01 * 0.4;   // [0.6, 1.0]
+      if (brightness > iconBuffer[idx]) iconBuffer[idx] = brightness;
+    }
+  }
+
   function measureChar() {
     // Probe lives INSIDE the field so it inherits font-family, font-size,
     // letter-spacing, and line-height through normal CSS — exactly like
@@ -79,6 +230,7 @@ setInterval(updateUptime, 1000); // then every second
     if (cells.length > 0 && cols === newCols && rows === newRows) return;
     cols = newCols;
     rows = newRows;
+    iconBuffer = new Float32Array(rows * cols);
     fieldEl.textContent = '';
     cells = [];
     const frag = document.createDocumentFragment();
@@ -149,6 +301,14 @@ setInterval(updateUptime, 1000); // then every second
     updateDrops(t);
     const cxP = cols / 2, cyP = rows / 2;
 
+    // Sequenced transition: water out (presence 0..0.5), icon in (0.5..1).
+    // Smoothstep on each half so the wipe doesn't feel mechanical.
+    const iconTarget = activeIcon ? 1 : 0;
+    iconPresence += (iconTarget - iconPresence) * 0.10;
+    const waterAlpha = 1 - smoothstep(0, 0.5, iconPresence);
+    const iconAlpha  = smoothstep(0.5, 1, iconPresence);
+    if (iconAlpha > 0) renderIcon(t);
+
     for (const cell of cells) {
       // Hover field — appears on top when cursor is over the plate.
       let fieldI = 0;
@@ -193,9 +353,15 @@ setInterval(updateUptime, 1000); // then every second
       if (s < 0) s = 0; else if (s > 1) s = 1;
       const dropI = s;
 
-      const intensity = fieldI > dropI ? fieldI : dropI;
+      let intensity = (fieldI > dropI ? fieldI : dropI) * waterAlpha;
+      if (iconAlpha > 0) {
+        const ib = iconBuffer[cell.r * cols + cell.c] * iconAlpha;
+        if (ib > intensity) intensity = ib;
+      }
+
       const idx = intensity >= 1 ? RAMP_LAST : Math.floor(intensity * RAMP.length);
       const ch = RAMP[idx > RAMP_LAST ? RAMP_LAST : idx];
+
       if (ch !== cell.last) {
         cell.el.textContent = ch;
         cell.last = ch;
@@ -233,9 +399,12 @@ setInterval(updateUptime, 1000); // then every second
   window.addEventListener('resize', scheduleFieldRebuild);
 
   // ---------- HERO COMPUTER ----------
-  // Larger ASCII illustration that lives in hero-side and cycles through
-  // screen content. Inner screen area: 58 chars wide × 22 rows tall —
-  // sized to give breathing room for menu/navigation content.
+  // Larger ASCII illustration in hero-side. Three states:
+  //   1. entrance  — plays once on load. Types HELLO, then CZEŚĆ.
+  //   2. attractor — loops "HOVER TO START" with a vertical bob until
+  //                  the user hovers or focuses.
+  //   3. menu      — full nav menu (see MENU MODE below).
+  // Inner screen area: 58 chars wide × 22 rows tall.
   const SCREEN_W = 58;
   const SCREEN_H = 22;
   const BOX_W = SCREEN_W + 6;     // ═ count in top/bottom borders
@@ -309,14 +478,18 @@ setInterval(updateUptime, 1000); // then every second
   // ---------- MENU MODE ----------
   // Items navigate to in-page anchors. Order matches the nav bar.
   const MENU_ITEMS = [
-    { label: '[01] ABOUT',    href: '#about'   },
-    { label: '[02] WORK',     href: '#work'    },
-    { label: '[03] WRITING',  href: '#writing' },
-    { label: '[04] CONTACT',  href: '#contact' },
+    { label: '[01] ABOUT',     href: '#about'     },
+    { label: '[02] RESUME',    href: '#resume'    },
+    { label: '[03] PORTFOLIO', href: '#portfolio' },
+    { label: '[04] BLOG',      href: '#blog'      },
+    { label: '[05] SOCIALS',   href: '#socials'   },
   ];
   // Index inside the screen's SCREEN_H rows where item 0 sits.
   const MENU_FIRST_ITEM_LINE = 4;
-  let menuIdx = 0;
+  // -1 means "nothing currently highlighted" — pointer is inside the
+  // machine but not over any specific item. Renderers treat -1 as a
+  // no-selection state (no ▸ marker, no .menu-item--selected class).
+  let menuIdx = -1;
   let inMenu = false;
 
   function escapeHTML(s) {
@@ -382,96 +555,223 @@ setInterval(updateUptime, 1000); // then every second
     return parts.join('\n');
   }
 
-  const SCREENS = [
-    {
-      label: 'BOOTING SYSTEM 1.0',
-      lines: [
-        ' SYSTEM 1.0  BOOTING...',
-        '',
-        ' RAM CHECK ............ OK',
-        ' CPU @ 8MHz ........... OK',
-        ' LOADING WORKBENCH .... OK',
-        '',
-        ' READY.▮CURSOR▮'
-      ]
-    },
-    {
-      label: 'GREETING',
-      lines: [
-        '      ╭───────────╮',
-        '      │           │',
-        '      │   o   o   │',
-        '      │           │',
-        '      │    \\_/    │',
-        '      ╰───────────╯',
-        '       HELLO WORLD'
-      ]
-    },
-    {
-      label: 'TERMINAL SESSION',
-      lines: [
-        ' $ whoami',
-        ' matthew_trefon',
-        ' $ ls projects/',
-        ' > portfolio.html',
-        ' > tinker.app',
-        ' > coffee.sh',
-        ' $ ▮CURSOR▮'
-      ]
-    },
-    {
-      label: 'DOWNLOADING IDEAS',
-      lines: [
-        '',
-        ' DOWNLOADING IDEAS...',
-        '',
-        ' [██████████░░░░░░] 64%',
-        '',
-        ' ETA: 2026',
-        ''
-      ]
-    },
-    {
-      label: 'NOW PLAYING',
-      lines: [
-        '',
-        '   ♪  NOW PLAYING  ♪',
-        '',
-        '  A QUIET LITTLE TUNE',
-        '',
-        '  03:42 / 04:15',
-        '  [███████░░░░░░░░░]'
-      ]
+  // Entrance: types HELLO, pauses, types CZEŚĆ (English then Polish).
+  // Plays exactly once per page load — if the user hovers in mid-play
+  // and later returns, elapsed time has already exceeded ENTRANCE_DURATION
+  // so machineTick falls through to the attractor.
+  const HELLO_TEXT = 'HELLO';
+  const CZESC_TEXT = 'CZEŚĆ';
+  const TYPE_MS_PER_CHAR = 160;
+  const HOLD_BETWEEN_MS  = 600;
+  const HOLD_AFTER_MS    = 1100;
+  const ENTRANCE_DURATION =
+    HELLO_TEXT.length * TYPE_MS_PER_CHAR +
+    HOLD_BETWEEN_MS +
+    CZESC_TEXT.length * TYPE_MS_PER_CHAR +
+    HOLD_AFTER_MS;
+
+  let mode = 'entrance';   // 'entrance' | 'attractor'
+  let modeStartT = 0;      // timestamp of the current mode's first frame
+  let machineRAF = null;
+
+  // Center `text` in the screen, then append `trailing` (a 1-char cursor
+  // or '') AFTER centering. Doing it this way keeps the word's column
+  // fixed even as the cursor blinks on and off.
+  function placeCentered(text, trailing) {
+    const len = [...text].length;
+    const left = Math.max(0, Math.floor((SCREEN_W - len) / 2));
+    return ' '.repeat(left) + text + (trailing || '');
+  }
+
+  function renderEntrance(elapsed) {
+    const helloEnd = HELLO_TEXT.length * TYPE_MS_PER_CHAR;
+    const pauseEnd = helloEnd + HOLD_BETWEEN_MS;
+    const czescEnd = pauseEnd + CZESC_TEXT.length * TYPE_MS_PER_CHAR;
+
+    const helloChars = (elapsed < helloEnd)
+      ? Math.floor(elapsed / TYPE_MS_PER_CHAR)
+      : HELLO_TEXT.length;
+    const czescChars = (elapsed < pauseEnd) ? 0
+      : (elapsed < czescEnd)
+        ? Math.floor((elapsed - pauseEnd) / TYPE_MS_PER_CHAR)
+        : CZESC_TEXT.length;
+
+    const blinkOn = Math.floor(elapsed / 400) % 2 === 0;
+    // Cursor sits on whichever line is "active": HELLO until CZEŚĆ starts,
+    // then jumps to CZEŚĆ.
+    const cursorOnLine1 = elapsed < pauseEnd;
+    const line1Cursor = cursorOnLine1 ? (blinkOn ? '▮' : ' ') : '';
+    const line2Cursor = !cursorOnLine1 ? (blinkOn ? '▮' : ' ') : '';
+
+    const lines = Array(SCREEN_H).fill('');
+    const centerRow = Math.floor(SCREEN_H / 2);
+    lines[centerRow - 1] = placeCentered(HELLO_TEXT.slice(0, helloChars), line1Cursor);
+    if (elapsed >= pauseEnd) {
+      lines[centerRow + 1] = placeCentered(CZESC_TEXT.slice(0, czescChars), line2Cursor);
     }
-  ];
+    computerEl.textContent = frameMachine(lines, false);
+  }
 
-  let screenIdx = 0;
-  let blinkOn = true;
-  let cycleTimer = null;
-  let blinkTimer = null;
+  // ---------- ATTRACTOR: SMOOTH VERTICAL BOUNCE ----------
+  // The ASCII pre still draws the computer frame, but the screen interior
+  // is left blank and an absolutely-positioned <span> floats over it. We
+  // animate that span's CSS transform with rAF, so motion is true sub-
+  // pixel smooth — independent of the character grid. The text stays
+  // horizontally centered and bounces up/down between the screen's
+  // inner top and bottom (DVD-style reflection, vertical only).
+  const BOUNCE_TEXT = '▸  HOVER TO START  ◂';
+  // Vertical speed in line-heights per second — paces with the live
+  // lineH so it stays visually consistent across font sizes.
+  const BOUNCE_LINES_PER_SEC = 3.2;
+  // Inner-screen bounds, in character units within the pre's text grid:
+  //   col 5..63 (exclusive right) → 58 cols of usable width
+  //   row 3..25 (exclusive bottom) → 22 rows of usable height
+  const SCREEN_COL_LEFT = 5;
+  const SCREEN_COL_RIGHT = 5 + SCREEN_W;     // exclusive
+  const SCREEN_ROW_TOP = 3;
+  const SCREEN_ROW_BOTTOM = 3 + SCREEN_H;    // exclusive
 
+  let bounceEl = null;
+  let bounceX = 0, bounceY = 0;        // px, top-left of text relative to pre's padding box
+  let bounceVY = 0;                    // px per ms (vertical only)
+  let bounceMetrics = null;            // { charW, lineH, padL, padT }
+  let bounceLastT = 0;
+  let attractorReady = false;
+
+  function ensureBounceEl() {
+    if (bounceEl) return;
+    bounceEl = document.createElement('span');
+    bounceEl.className = 'computer-bounce';
+    bounceEl.style.cssText =
+      'position:absolute;left:0;top:0;white-space:pre;' +
+      'pointer-events:none;will-change:transform;';
+    bounceEl.textContent = BOUNCE_TEXT;
+  }
+
+  function measureBounceMetrics() {
+    const cs = getComputedStyle(computerEl);
+    const fontSize = parseFloat(cs.fontSize) || 12;
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padT = parseFloat(cs.paddingTop) || 0;
+
+    // Probe with a single char in the SAME font/size/letter-spacing AND
+    // line-height so we get both the rendered char width and the actual
+    // line-box height directly. Sidesteps the gotcha that CSS line-height
+    // can be unitless (the pre uses 1.05) — parseFloat would return 1.05
+    // and a NaN-fallback wouldn't catch it, leaving lineH at ~1px instead
+    // of fontSize × 1.05.
+    const probe = document.createElement('span');
+    probe.style.cssText =
+      'position:absolute;visibility:hidden;white-space:pre;' +
+      `font-family:${cs.fontFamily};font-size:${cs.fontSize};` +
+      `letter-spacing:${cs.letterSpacing};` +
+      `line-height:${cs.lineHeight};` +
+      `font-feature-settings:${cs.fontFeatureSettings};`;
+    probe.textContent = 'M';
+    document.body.appendChild(probe);
+    const rect = probe.getBoundingClientRect();
+    const charW = rect.width  || fontSize * 0.6;
+    const lineH = rect.height || fontSize * 1.2;
+    probe.remove();
+
+    return { charW, lineH, padL, padT };
+  }
+
+  function bounceBounds() {
+    const m = bounceMetrics;
+    return {
+      left:   m.padL + SCREEN_COL_LEFT  * m.charW,
+      right:  m.padL + SCREEN_COL_RIGHT * m.charW,
+      top:    m.padT + SCREEN_ROW_TOP    * m.lineH,
+      bottom: m.padT + SCREEN_ROW_BOTTOM * m.lineH,
+      textW:  BOUNCE_TEXT.length * m.charW,
+      textH:  m.lineH,
+    };
+  }
+
+  function clampBounce() {
+    if (!bounceMetrics) return;
+    const b = bounceBounds();
+    // X stays centered; only Y can drift out of range when the screen
+    // resizes, so that's all we clamp.
+    bounceX = (b.left + b.right - b.textW) / 2;
+    if (bounceY < b.top)              bounceY = b.top;
+    if (bounceY + b.textH > b.bottom) bounceY = b.bottom - b.textH;
+  }
+
+  function setupAttractor() {
+    // Render the computer with an empty screen, then attach the
+    // bounce overlay as a positioned child of the pre.
+    computerEl.style.position = 'relative';
+    const lines = Array(SCREEN_H).fill('');
+    computerEl.textContent = frameMachine(lines, false);
+
+    ensureBounceEl();
+    computerEl.appendChild(bounceEl);
+    bounceMetrics = measureBounceMetrics();
+
+    // Center horizontally, start near the middle vertically with a
+    // randomized up-or-down direction so each load looks fresh.
+    const b = bounceBounds();
+    bounceX = (b.left + b.right - b.textW) / 2;
+    bounceY = (b.top + b.bottom - b.textH) / 2;
+    const speedPxPerMs = (BOUNCE_LINES_PER_SEC * bounceMetrics.lineH) / 1000;
+    bounceVY = (Math.random() < 0.5 ? -1 : 1) * speedPxPerMs;
+
+    bounceLastT = 0;
+    bounceEl.style.transform = `translate(${bounceX.toFixed(2)}px, ${bounceY.toFixed(2)}px)`;
+  }
+
+  function tickBounce(t) {
+    if (!bounceMetrics || !bounceEl) return;
+    if (bounceLastT === 0) bounceLastT = t;
+    // Cap dt to prevent giant jumps after a tab-blur or long frame.
+    const dt = Math.min(t - bounceLastT, 50);
+    bounceLastT = t;
+
+    bounceY += bounceVY * dt;
+
+    const b = bounceBounds();
+    if (bounceY <= b.top)              { bounceY = b.top;              bounceVY =  Math.abs(bounceVY); }
+    if (bounceY + b.textH >= b.bottom) { bounceY = b.bottom - b.textH; bounceVY = -Math.abs(bounceVY); }
+    bounceEl.style.transform = `translate(${bounceX.toFixed(2)}px, ${bounceY.toFixed(2)}px)`;
+  }
+
+  // Menu mode renders directly through here (HTML, hit-targets per item).
+  // Entrance + attractor are driven by the rAF loop in machineTick.
   function renderMachine() {
     if (!computerEl) return;
-    if (inMenu) {
-      computerEl.innerHTML = frameMachineMenuHTML();
-    } else {
-      computerEl.textContent = frameMachine(SCREENS[screenIdx].lines, blinkOn);
-    }
+    if (inMenu) computerEl.innerHTML = frameMachineMenuHTML();
   }
-  function nextScreen() {
-    if (inMenu) return;
-    screenIdx = (screenIdx + 1) % SCREENS.length;
-    renderMachine();
+
+  function machineTick(t) {
+    if (inMenu) { machineRAF = null; return; }
+    if (modeStartT === 0) modeStartT = t;
+    const elapsed = t - modeStartT;
+    if (mode === 'entrance' && elapsed >= ENTRANCE_DURATION) {
+      mode = 'attractor';
+      modeStartT = t;
+      attractorReady = false;
+    } else if (mode === 'entrance') {
+      renderEntrance(elapsed);
+      machineRAF = requestAnimationFrame(machineTick);
+      return;
+    }
+    // Attractor: lazy one-time frame setup, then per-frame bounce update.
+    if (!attractorReady) {
+      setupAttractor();
+      attractorReady = true;
+    }
+    tickBounce(t);
+    machineRAF = requestAnimationFrame(machineTick);
   }
   function startMachine() {
-    if (cycleTimer) return;
-    renderMachine();
-    cycleTimer = setInterval(nextScreen, 4500);
-    blinkTimer = setInterval(() => {
-      if (inMenu) return;
-      blinkOn = !blinkOn;
-      renderMachine();
-    }, 550);
+    if (machineRAF || inMenu) return;
+    machineRAF = requestAnimationFrame(machineTick);
+  }
+  function stopMachine() {
+    if (machineRAF) cancelAnimationFrame(machineRAF);
+    machineRAF = null;
   }
 
   // Pick the largest font-size that keeps the (BOX_W + 2)-char-wide frame
@@ -503,12 +803,40 @@ setInterval(updateUptime, 1000); // then every second
     const idealFont = targetFrameW / (COMPUTER_FRAME_CHARS * charPerFontPx);
     const finalFont = Math.max(7, Math.min(16, Math.floor(idealFont)));
     computerEl.style.fontSize = finalFont + 'px';
+
+    // Font-size shifts the bounce overlay's pixel geometry — re-measure
+    // and clamp so the text doesn't end up outside the new screen rect.
+    if (attractorReady && bounceEl && bounceEl.parentNode === computerEl) {
+      bounceMetrics = measureBounceMetrics();
+      clampBounce();
+    }
   }
 
-  function enterMenu() {
+  // Sync the field icon to the menu's current selection. Called after any
+  // event that changes inMenu or menuIdx so hovering / arrow-keying menu
+  // items drives the same overlay as hovering the nav bar.
+  function syncMenuIcon() {
+    if (inMenu && menuIdx >= 0 && menuIdx < MENU_ITEMS.length) {
+      const href = MENU_ITEMS[menuIdx].href;
+      if (NAV_ICON_KEYS.has(href)) { activeIcon = href; return; }
+    }
+    activeIcon = null;
+  }
+
+  function enterMenu(viaKeyboard) {
     if (inMenu) return;
     inMenu = true;
+    // Keyboard entry (Tab focus) needs an initial selection so arrow
+    // keys have something to start from. Pointer entry leaves selection
+    // empty — items only highlight when the cursor actually lands on
+    // one (handled by the mousemove listener below).
+    menuIdx = viaKeyboard ? 0 : -1;
+    stopMachine();
+    // Menu rendering replaces the pre's innerHTML, removing the bounce
+    // overlay; flag attractor for re-setup so it rebuilds on return.
+    attractorReady = false;
     renderMachine();
+    syncMenuIcon();
   }
   function exitMenu() {
     if (!inMenu) return;
@@ -516,7 +844,8 @@ setInterval(updateUptime, 1000); // then every second
     // after a Tab keyboard focus) or while the cursor is still hovering.
     if (computerEl && (document.activeElement === computerEl || computerEl.matches(':hover'))) return;
     inMenu = false;
-    renderMachine();
+    startMachine();
+    syncMenuIcon();
   }
   function activateMenuItem(idx) {
     const item = MENU_ITEMS[idx];
@@ -535,20 +864,26 @@ setInterval(updateUptime, 1000); // then every second
   if (computerEl) {
     computerEl.tabIndex = 0;
 
-    computerEl.addEventListener('mouseenter', enterMenu);
+    computerEl.addEventListener('mouseenter', () => enterMenu(false));
     computerEl.addEventListener('mouseleave', exitMenu);
-    computerEl.addEventListener('focus', enterMenu);
+    computerEl.addEventListener('focus', () => enterMenu(true));
     computerEl.addEventListener('blur', exitMenu);
 
-    // Hover an item to move the selection cursor to it.
+    // Selection follows the pointer: highlight the item under the cursor,
+    // clear the highlight when the cursor is over the frame or any gap
+    // between items. -1 = nothing selected.
     computerEl.addEventListener('mousemove', (e) => {
       if (!inMenu) return;
       const link = e.target.closest('.menu-item');
-      if (!link) return;
-      const idx = parseInt(link.dataset.idx, 10);
-      if (!Number.isNaN(idx) && idx !== menuIdx) {
+      let idx = -1;
+      if (link) {
+        const parsed = parseInt(link.dataset.idx, 10);
+        if (!Number.isNaN(parsed)) idx = parsed;
+      }
+      if (idx !== menuIdx) {
         menuIdx = idx;
         renderMachine();
+        syncMenuIcon();
       }
     });
 
@@ -562,6 +897,7 @@ setInterval(updateUptime, 1000); // then every second
         const idx = parseInt(link.dataset.idx, 10);
         if (!Number.isNaN(idx)) {
           menuIdx = idx;
+          syncMenuIcon();
           activateMenuItem(idx);
         }
         return;
@@ -581,29 +917,54 @@ setInterval(updateUptime, 1000); // then every second
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
         e.preventDefault();
-        menuIdx = (menuIdx + 1) % MENU_ITEMS.length;
+        // From "nothing selected" go to the first item; otherwise wrap.
+        menuIdx = menuIdx < 0 ? 0 : (menuIdx + 1) % MENU_ITEMS.length;
         renderMachine();
+        syncMenuIcon();
       } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
         e.preventDefault();
-        menuIdx = (menuIdx - 1 + MENU_ITEMS.length) % MENU_ITEMS.length;
+        // From "nothing selected" go to the last item; otherwise wrap.
+        menuIdx = menuIdx < 0
+          ? MENU_ITEMS.length - 1
+          : (menuIdx - 1 + MENU_ITEMS.length) % MENU_ITEMS.length;
         renderMachine();
+        syncMenuIcon();
       } else if (e.key === 'Home') {
         e.preventDefault();
         menuIdx = 0;
         renderMachine();
+        syncMenuIcon();
       } else if (e.key === 'End') {
         e.preventDefault();
         menuIdx = MENU_ITEMS.length - 1;
         renderMachine();
+        syncMenuIcon();
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        activateMenuItem(menuIdx);
+        if (menuIdx >= 0) activateMenuItem(menuIdx);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         computerEl.blur();
       }
     });
   }
+
+  // ---------- NAV-LINK ICONS ----------
+  // Hovering/focusing a nav link sets activeIcon to the link's href.
+  // The render loop fades water out and a 3D icon in (see renderIcon).
+  // Add hrefs here as new icons are implemented.
+  const NAV_ICON_KEYS = new Set(['#about', '#resume']);
+
+  document.querySelectorAll('.nav-bar a[href^="#"]').forEach((a) => {
+    const href = a.getAttribute('href');
+    if (!NAV_ICON_KEYS.has(href)) return;
+    const show = () => { activeIcon = href; };
+    const hide = () => { if (activeIcon === href) activeIcon = null; };
+    a.addEventListener('mouseenter', show);
+    a.addEventListener('mouseleave', hide);
+    a.addEventListener('focus', show);
+    a.addEventListener('blur', hide);
+  });
 
   // ---------- INIT ----------
   if (cells.length === 0) buildField();

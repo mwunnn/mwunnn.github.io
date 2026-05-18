@@ -128,6 +128,14 @@
         link('RSS',      '/feed.xml',              '#') +
         '</ul>',
     },
+    // The original static site, embedded in its own window.
+    static_site: {
+      title: 'static_site',
+      cls: 'win--site',
+      content:
+        '<iframe class="win__site" src="../site.html" ' +
+        'title="Matthew Trefon — the static site" loading="lazy"></iframe>',
+    },
   };
 
   /* small content helpers ---------------------------------- */
@@ -156,12 +164,13 @@
 
   /* Icons on the desk, in display order. `type` picks the SVG. */
   const ICONS = [
-    { id: 'read_me',   label: 'read_me', type: 'doc'    },
-    { id: 'about',     label: 'About',   type: 'folder' },
-    { id: 'resume',    label: 'Resume',  type: 'folder' },
-    { id: 'portfolio', label: 'Work',    type: 'folder' },
-    { id: 'blog',      label: 'Blog',    type: 'folder' },
-    { id: 'socials',   label: 'Socials', type: 'folder' },
+    { id: 'read_me',     label: 'read_me',     type: 'doc'    },
+    { id: 'about',       label: 'About',       type: 'folder' },
+    { id: 'resume',      label: 'Resume',      type: 'folder' },
+    { id: 'portfolio',   label: 'Work',        type: 'folder' },
+    { id: 'blog',        label: 'Blog',        type: 'folder' },
+    { id: 'socials',     label: 'Socials',     type: 'folder' },
+    { id: 'static_site', label: 'Static Site', type: 'doc'    },
   ];
 
   const FOLDER_SVG =
@@ -190,6 +199,20 @@
     // Force a reflow, then hand the transition back for the zoom.
     void crt.offsetWidth;
     crt.style.transition = '';
+  }
+
+  // Title card — the animated entrance (banner wipe, tagline ripple,
+  // computer rise). Plays once per browser tab; reduced motion skips
+  // it. CSS does the animating; this just toggles the .cover-intro
+  // class and re-docks the CRT once the computer has settled.
+  function playCover() {
+    if (reduceMotion || sessionStorage.getItem('mos_cover_seen')) return;
+    sessionStorage.setItem('mos_cover_seen', '1');
+    body.classList.add('cover-intro');
+    window.setTimeout(function () {
+      body.classList.remove('cover-intro');
+      dockCRT();
+    }, 2700);
   }
 
   let booted = false;
@@ -298,6 +321,22 @@
     window.setTimeout(function () { openWindow('read_me'); }, 420);
   }
 
+  // Skip the whole power-on sequence and land straight on the
+  // desktop — used when arriving already-booted (from the orrery
+  // intro, which has effectively done the booting already).
+  function bootInstant() {
+    if (booted) return;
+    booted = true;
+    body.classList.add('os-on', 'os-zooming', 'os-desktop');
+    crt.classList.add('crt--full');
+    crt.style.transition = 'none';
+    crt.style.top    = '0px';
+    crt.style.left   = '0px';
+    crt.style.width  = window.innerWidth + 'px';
+    crt.style.height = window.innerHeight + 'px';
+    enterDesktop();
+  }
+
   /* =========================================================
      DESKTOP : menu bar + clock + uptime
      ========================================================= */
@@ -387,6 +426,7 @@
 
     const win = document.createElement('div');
     win.className = 'win';
+    if (data.cls) win.classList.add(data.cls);
     win.dataset.win = id;
     win.innerHTML =
       '<div class="win__bar">' +
@@ -516,10 +556,43 @@
     }
   });
 
-  // Initial dock once layout (and ideally the web fonts) settle.
-  dockCRT();
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(dockCRT);
+  /* ---- Brand menu — power off → back to the galaxy ---------- */
+  (function brandMenu() {
+    const brandBtn = document.getElementById('brandBtn');
+    const menu     = document.getElementById('brandMenu');
+    const powerOff = document.getElementById('powerOff');
+    if (!brandBtn) return;
+
+    function setOpen(open) {
+      menu.hidden = !open;
+      brandBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    brandBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOpen(menu.hidden);
+    });
+    // Any click elsewhere, or Escape, closes the menu.
+    document.addEventListener('click', function () { setOpen(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setOpen(false);
+    });
+    powerOff.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setOpen(false);
+      powerDown();
+    });
+  })();
+
+  // Boot-off sequence — collapse the CRT, then return to the galaxy.
+  function powerDown() {
+    if (body.classList.contains('shutting-down')) return;
+    body.classList.add('shutting-down');
+    window.setTimeout(function () {
+      window.location.href = '../index.html';
+    }, 700);
   }
-  window.addEventListener('load', dockCRT);
+
+  // The boot sequence (power-on, boot log, CRT zoom, title card) is
+  // retired — MATTHEW_OS lands straight on the desktop.
+  bootInstant();
 })();

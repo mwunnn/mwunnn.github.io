@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Computer 3D — prototype</title>
+
+<!--
+  COMPUTER3D.HTML — standalone prototype.
+
+  A true-3D ASCII computer: a vintage all-in-one modelled as
+  shaded boxes, spun about its vertical axis and rendered through
+  a depth buffer (see computer3d.js).
+
+  Self-contained — inline CSS, one local script, no dependencies —
+  so it can be tuned here and then folded into the main build, or
+  deleted, without touching anything else.
+-->
+
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --paper: #f4f1ea;
+    --space: #0b0b10;
+    --star: #f4f1ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  /* Default to the deep-space negative — light glyphs on dark read
+     best for a shaded 3D render. INVERT flips to the paper palette. */
+  body {
+    background: var(--space);
+    color: var(--star);
+    overflow: hidden;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Cascadia Mono', monospace;
+    transition: background-color 400ms ease, color 400ms ease;
+  }
+  body.invert {
+    background-color: var(--paper);
+    color: var(--ink);
+    background-image: radial-gradient(rgba(0,0,0,0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+
+  /* The render surface — one monospace canvas, centred. Drag it
+     to orbit the model; touch-action:none keeps a touch-drag from
+     scrolling the page instead. */
+  #screen {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: pre;
+    line-height: 1;
+    letter-spacing: 0;
+    user-select: none;
+    cursor: grab;
+    touch-action: none;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
+
+  /* HUD — minimal prototype controls. */
+  .hud {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 12px 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .hud__label { opacity: 0.55; }
+  .hud__btns { display: flex; gap: 8px; pointer-events: auto; }
+  .hud button {
+    font: inherit;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: inherit;
+    background: transparent;
+    border: 1px solid currentColor;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .hud button:hover { background: currentColor; color: var(--space); }
+  body.invert .hud button:hover { color: var(--paper); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+  <h1 class="sr-only">3D ASCII computer — animation prototype</h1>
+
+  <pre id="screen" aria-hidden="true"></pre>
+
+  <div class="hud">
+    <span class="hud__label">Fig. — Computer / 3D · drag to orbit</span>
+    <span class="hud__btns">
+      <button id="speed"  type="button">Speed: Normal</button>
+      <button id="invert" type="button">Invert</button>
+      <button id="pause"  type="button">Pause</button>
+    </span>
+  </div>
+
+  <script src="computer3d.js"></script>
+</body>
+</html>

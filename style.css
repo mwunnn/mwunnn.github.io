@@ -239,19 +239,57 @@ svg { fill: var(--ink); }
   font-feature-settings: "liga" 0, "calt" 0;
 }
 
-/* Hero computer in menu mode — the screen becomes a navigation widget.
-   Each <a class="menu-item"> wraps a full padded line of the screen so the
-   entire row is a click target. The selected (or hovered) row inverts to
-   give a classic Mac highlight bar. */
+/* Hero computer in menu mode — the screen becomes a Mac-style desktop:
+   five folders arranged 3-over-2, each one a click target with a label.
+   The grid container (.menu-folders) is positioned and sized in JS to fit
+   the screen interior; everything inside scales via em from the container
+   font-size, so resizing the parent pre keeps proportions consistent. */
 .ascii-computer { outline: none; }
 .ascii-computer:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
-.ascii-computer .menu-item {
+
+.ascii-computer .menu-folders {
+  font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink);
+  gap: 0.55em;
+  line-height: 1;
+}
+.ascii-computer .menu-folders__row {
+  gap: 1.1em;
+}
+.ascii-computer .menu-folder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em;
+  padding: 0.25em 0.45em 0.3em;
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  border-radius: 1px;
+  transition: background-color 90ms ease, color 90ms ease;
 }
-.ascii-computer .menu-item:hover,
-.ascii-computer .menu-item--selected {
+.ascii-computer .menu-folder__icon {
+  display: block;
+  width: 2.6em;
+  height: 2em;
+  line-height: 0;
+}
+.ascii-computer .menu-folder__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+}
+.ascii-computer .menu-folder__label {
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+.ascii-computer .menu-folder:hover,
+.ascii-computer .menu-folder--selected {
   background: var(--ink);
   color: var(--paper);
 }

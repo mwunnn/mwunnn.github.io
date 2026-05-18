@@ -476,21 +476,37 @@ setInterval(updateUptime, 1000); // then every second
   }
 
   // ---------- MENU MODE ----------
-  // Items navigate to in-page anchors. Order matches the nav bar.
+  // Items navigate to in-page anchors. `name` is the title-case label that
+  // sits under each folder icon; the order also drives keyboard navigation.
   const MENU_ITEMS = [
-    { label: '[01] ABOUT',     href: '#about'     },
-    { label: '[02] RESUME',    href: '#resume'    },
-    { label: '[03] PORTFOLIO', href: '#portfolio' },
-    { label: '[04] BLOG',      href: '#blog'      },
-    { label: '[05] SOCIALS',   href: '#socials'   },
+    { name: 'About',     href: '#about'     },
+    { name: 'Resume',    href: '#resume'    },
+    { name: 'Portfolio', href: '#portfolio' },
+    { name: 'Blog',      href: '#blog'      },
+    { name: 'Socials',   href: '#socials'   },
   ];
-  // Index inside the screen's SCREEN_H rows where item 0 sits.
-  const MENU_FIRST_ITEM_LINE = 4;
+  // Folders are arranged in two centered rows on the desktop — three on top,
+  // two on the bottom — to read like a classic Finder window.
+  const MENU_TOP_ROW_COUNT = 3;
+  // Base font-size of the menu overlay, expressed as a multiple of the
+  // parent pre's font-size. Folder icons and labels are sized in em so
+  // everything scales together when fitComputer changes the parent size.
+  const MENU_FONT_SCALE = 1.05;
+  // Folder SVG — outline-only so it inverts cleanly against the selection
+  // highlight via `currentColor`. Step on the upper-left is the tab.
+  const FOLDER_SVG =
+    '<svg class="menu-folder__svg" viewBox="0 0 28 22" fill="none" ' +
+    'stroke="currentColor" stroke-width="1.4" stroke-linejoin="miter" ' +
+    'aria-hidden="true">' +
+      '<path d="M2 5 H10 L12 7 H26 V20 H2 Z"/>' +
+      '<line x1="2" y1="7" x2="12" y2="7"/>' +
+    '</svg>';
   // -1 means "nothing currently highlighted" — pointer is inside the
-  // machine but not over any specific item. Renderers treat -1 as a
-  // no-selection state (no ▸ marker, no .menu-item--selected class).
+  // machine but not over any specific folder. Renderers treat -1 as a
+  // no-selection state (no .menu-folder--selected class).
   let menuIdx = -1;
   let inMenu = false;
+  let menuEl = null;  // <div> overlay holding the folder grid; rebuilt on entry
 
   function escapeHTML(s) {
     return s.replace(/[&<>"']/g, (c) => (
@@ -498,61 +514,68 @@ setInterval(updateUptime, 1000); // then every second
     ));
   }
 
-  function buildMenuLines() {
-    const lines = [];
-    lines.push('');
-    lines.push(' MAIN MENU');
-    lines.push(' ' + '─'.repeat(SCREEN_W - 2));
-    lines.push('');
+  function ensureMenuEl() {
+    if (menuEl) return;
+    menuEl = document.createElement('div');
+    menuEl.className = 'menu-folders';
+    menuEl.setAttribute('role', 'navigation');
+    menuEl.setAttribute('aria-label', 'Main menu');
+    // Inline positioning + flex layout. Visual styling lives in style.css.
+    menuEl.style.cssText =
+      'position:absolute;left:0;top:0;' +
+      'display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;' +
+      'white-space:normal;pointer-events:none;';
+
+    const rows = [
+      document.createElement('div'),
+      document.createElement('div'),
+    ];
+    rows.forEach((r) => {
+      r.className = 'menu-folders__row';
+      r.style.cssText = 'display:flex;justify-content:center;';
+    });
+
     for (let i = 0; i < MENU_ITEMS.length; i++) {
-      const marker = (i === menuIdx) ? '▸' : ' ';
-      lines.push(` ${marker}  ${MENU_ITEMS[i].label}`);
+      const item = MENU_ITEMS[i];
+      const a = document.createElement('a');
+      a.className = 'menu-folder';
+      a.href = item.href;
+      a.dataset.idx = String(i);
+      a.tabIndex = -1;
+      a.style.pointerEvents = 'auto';
+      a.innerHTML =
+        `<span class="menu-folder__icon">${FOLDER_SVG}</span>` +
+        `<span class="menu-folder__label">${escapeHTML(item.name)}</span>`;
+      (i < MENU_TOP_ROW_COUNT ? rows[0] : rows[1]).appendChild(a);
     }
-    lines.push('');
-    lines.push(' ↑↓ NAVIGATE   ↵ OPEN   ✕ CLICK');
-    return lines;
+    rows.forEach((r) => menuEl.appendChild(r));
   }
 
-  // Build the full machine as HTML, wrapping menu-item lines in <a> so each
-  // row is a hit target. The frame characters stay as plain (escaped) text.
-  function frameMachineMenuHTML() {
-    const lines = buildMenuLines();
-    const screenRows = [];
-    for (let i = 0; i < SCREEN_H; i++) {
-      screenRows.push(padScreenLine(lines[i] || ''));
-    }
-    const parts = [];
-    parts.push(escapeHTML(TOP_BORDER));
-    parts.push(escapeHTML(BOX_EMPTY));
-    parts.push(escapeHTML(SCREEN_TOP));
-    for (let i = 0; i < SCREEN_H; i++) {
-      const itemIdx = i - MENU_FIRST_ITEM_LINE;
-      if (itemIdx >= 0 && itemIdx < MENU_ITEMS.length) {
-        const item = MENU_ITEMS[itemIdx];
-        const sel = (itemIdx === menuIdx) ? ' menu-item--selected' : '';
-        parts.push(
-          escapeHTML('║   │') +
-          `<a href="${escapeHTML(item.href)}" class="menu-item${sel}" data-idx="${itemIdx}" tabindex="-1">` +
-          escapeHTML(screenRows[i]) +
-          '</a>' +
-          escapeHTML('│ ║')
-        );
-      } else {
-        parts.push(escapeHTML('║   │' + screenRows[i] + '│ ║'));
-      }
-    }
-    parts.push(escapeHTML(SCREEN_BOT));
-    parts.push(escapeHTML(BOX_EMPTY));
-    parts.push(escapeHTML(FRONT_PANEL));
-    parts.push(escapeHTML(BOT_BORDER));
-    parts.push(escapeHTML(SLOPE_TOP));
-    parts.push(escapeHTML(SLOPE_BOT));
-    parts.push(escapeHTML(SLOPE_EDGE));
-    parts.push(escapeHTML(KB_TOP));
-    parts.push(escapeHTML(KB_INNER));
-    parts.push(escapeHTML(KB_INNER));
-    parts.push(escapeHTML(KB_BOT));
-    return parts.join('\n');
+  function positionMenuEl() {
+    if (!menuEl || !computerEl) return;
+    const cs = getComputedStyle(computerEl);
+    const padL = parseFloat(cs.paddingLeft) || 0;
+    const padT = parseFloat(cs.paddingTop) || 0;
+    const baseFs = parseFloat(cs.fontSize) || 12;
+    const m = probeCharMetrics(cs);
+    const left   = padL + SCREEN_COL_LEFT * m.charW;
+    const top    = padT + SCREEN_ROW_TOP  * m.lineH;
+    const width  = SCREEN_W * m.charW;
+    const height = SCREEN_H * m.lineH;
+    menuEl.style.left     = left.toFixed(2) + 'px';
+    menuEl.style.top      = top.toFixed(2) + 'px';
+    menuEl.style.width    = width.toFixed(2) + 'px';
+    menuEl.style.height   = height.toFixed(2) + 'px';
+    menuEl.style.fontSize = (baseFs * MENU_FONT_SCALE).toFixed(2) + 'px';
+  }
+
+  function updateMenuSelection() {
+    if (!menuEl) return;
+    const items = menuEl.querySelectorAll('.menu-folder');
+    items.forEach((el, i) => {
+      el.classList.toggle('menu-folder--selected', i === menuIdx);
+    });
   }
 
   // Entrance: types HELLO, pauses, types CZEŚĆ (English then Polish).
@@ -612,17 +635,20 @@ setInterval(updateUptime, 1000); // then every second
     computerEl.textContent = frameMachine(lines, false);
   }
 
-  // ---------- ATTRACTOR: SMOOTH VERTICAL BOUNCE ----------
+  // ---------- ATTRACTOR: CENTERED PULSE ----------
   // The ASCII pre still draws the computer frame, but the screen interior
-  // is left blank and an absolutely-positioned <span> floats over it. We
-  // animate that span's CSS transform with rAF, so motion is true sub-
-  // pixel smooth — independent of the character grid. The text stays
-  // horizontally centered and bounces up/down between the screen's
-  // inner top and bottom (DVD-style reflection, vertical only).
+  // is left blank and an absolutely-positioned <span> floats over it,
+  // pinned to the screen's center. The span fades smoothly via a sine
+  // wave on rAF so it pulses in and out without ever fully disappearing.
   const BOUNCE_TEXT = '▸  HOVER TO START  ◂';
-  // Vertical speed in line-heights per second — paces with the live
-  // lineH so it stays visually consistent across font sizes.
-  const BOUNCE_LINES_PER_SEC = 3.2;
+  // One full fade-in / fade-out cycle.
+  const BLINK_PERIOD_MS  = 2400;
+  // Floor opacity — the text dips to this value at the trough rather than
+  // hitting zero, which keeps the motion feeling soft.
+  const BLINK_MIN_OPACITY = 0.22;
+  // The attractor text is rendered larger than the screen's grid font so
+  // it's easier to read; positioning still uses the parent grid metrics.
+  const BLINK_TEXT_SCALE = 1.6;
   // Inner-screen bounds, in character units within the pre's text grid:
   //   col 5..63 (exclusive right) → 58 cols of usable width
   //   row 3..25 (exclusive bottom) → 22 rows of usable height
@@ -633,9 +659,8 @@ setInterval(updateUptime, 1000); // then every second
 
   let bounceEl = null;
   let bounceX = 0, bounceY = 0;        // px, top-left of text relative to pre's padding box
-  let bounceVY = 0;                    // px per ms (vertical only)
-  let bounceMetrics = null;            // { charW, lineH, padL, padT }
-  let bounceLastT = 0;
+  let bounceMetrics = null;            // { charW, lineH, textCharW, textLineH, padL, padT }
+  let bounceStartT = 0;                // ms timestamp of the first tick (pulse phase anchor)
   let attractorReady = false;
 
   function ensureBounceEl() {
@@ -644,22 +669,25 @@ setInterval(updateUptime, 1000); // then every second
     bounceEl.className = 'computer-bounce';
     bounceEl.style.cssText =
       'position:absolute;left:0;top:0;white-space:pre;' +
-      'pointer-events:none;will-change:transform;';
+      'pointer-events:none;will-change:opacity;';
     bounceEl.textContent = BOUNCE_TEXT;
   }
 
-  function measureBounceMetrics() {
-    const cs = getComputedStyle(computerEl);
-    const fontSize = parseFloat(cs.fontSize) || 12;
-    const padL = parseFloat(cs.paddingLeft) || 0;
-    const padT = parseFloat(cs.paddingTop) || 0;
+  // Apply the scaled font-size to bounceEl based on the current parent
+  // (computerEl) font-size. Call after fitComputer changes the parent
+  // size so the overlay scales with it.
+  function applyBounceFontSize() {
+    if (!bounceEl) return;
+    const csParent = getComputedStyle(computerEl);
+    const baseFs = parseFloat(csParent.fontSize) || 12;
+    bounceEl.style.fontSize = (baseFs * BLINK_TEXT_SCALE).toFixed(2) + 'px';
+  }
 
-    // Probe with a single char in the SAME font/size/letter-spacing AND
-    // line-height so we get both the rendered char width and the actual
-    // line-box height directly. Sidesteps the gotcha that CSS line-height
-    // can be unitless (the pre uses 1.05) — parseFloat would return 1.05
-    // and a NaN-fallback wouldn't catch it, leaving lineH at ~1px instead
-    // of fontSize × 1.05.
+  // Probe a single char rendered with the given computed-style snapshot,
+  // returning its rendered width and line-box height. Computed styles
+  // are read once by the caller so we don't thrash layout.
+  function probeCharMetrics(cs) {
+    const fontSize = parseFloat(cs.fontSize) || 12;
     const probe = document.createElement('span');
     probe.style.cssText =
       'position:absolute;visibility:hidden;white-space:pre;' +
@@ -673,8 +701,26 @@ setInterval(updateUptime, 1000); // then every second
     const charW = rect.width  || fontSize * 0.6;
     const lineH = rect.height || fontSize * 1.2;
     probe.remove();
+    return { charW, lineH };
+  }
 
-    return { charW, lineH, padL, padT };
+  function measureBounceMetrics() {
+    // Two grids matter: the parent pre's character grid (used to locate
+    // the screen interior in pixel space) and the overlay span's grid
+    // (used to size and center the pulse text, since it's rendered at
+    // a larger font-size than the parent).
+    const csParent = getComputedStyle(computerEl);
+    const padL = parseFloat(csParent.paddingLeft) || 0;
+    const padT = parseFloat(csParent.paddingTop) || 0;
+    const parent = probeCharMetrics(csParent);
+    const overlay = probeCharMetrics(getComputedStyle(bounceEl));
+    return {
+      charW:     parent.charW,
+      lineH:     parent.lineH,
+      textCharW: overlay.charW,
+      textLineH: overlay.lineH,
+      padL, padT,
+    };
   }
 
   function bounceBounds() {
@@ -684,64 +730,76 @@ setInterval(updateUptime, 1000); // then every second
       right:  m.padL + SCREEN_COL_RIGHT * m.charW,
       top:    m.padT + SCREEN_ROW_TOP    * m.lineH,
       bottom: m.padT + SCREEN_ROW_BOTTOM * m.lineH,
-      textW:  BOUNCE_TEXT.length * m.charW,
-      textH:  m.lineH,
+      textW:  BOUNCE_TEXT.length * m.textCharW,
+      textH:  m.textLineH,
     };
   }
 
   function clampBounce() {
     if (!bounceMetrics) return;
     const b = bounceBounds();
-    // X stays centered; only Y can drift out of range when the screen
-    // resizes, so that's all we clamp.
+    // Pin both axes — the text is stationary now, so resizing should
+    // recenter it rather than just clamp it back into bounds.
     bounceX = (b.left + b.right - b.textW) / 2;
-    if (bounceY < b.top)              bounceY = b.top;
-    if (bounceY + b.textH > b.bottom) bounceY = b.bottom - b.textH;
+    bounceY = (b.top + b.bottom - b.textH) / 2;
+    bounceEl.style.transform = `translate(${bounceX.toFixed(2)}px, ${bounceY.toFixed(2)}px)`;
   }
 
   function setupAttractor() {
     // Render the computer with an empty screen, then attach the
-    // bounce overlay as a positioned child of the pre.
+    // overlay as a positioned child of the pre. textContent wipes any
+    // prior children (including the menu overlay), so null its handle.
     computerEl.style.position = 'relative';
     const lines = Array(SCREEN_H).fill('');
     computerEl.textContent = frameMachine(lines, false);
+    menuEl = null;
 
     ensureBounceEl();
     computerEl.appendChild(bounceEl);
+    applyBounceFontSize();
     bounceMetrics = measureBounceMetrics();
 
-    // Center horizontally, start near the middle vertically with a
-    // randomized up-or-down direction so each load looks fresh.
+    // Pin to the dead center of the screen interior.
     const b = bounceBounds();
     bounceX = (b.left + b.right - b.textW) / 2;
     bounceY = (b.top + b.bottom - b.textH) / 2;
-    const speedPxPerMs = (BOUNCE_LINES_PER_SEC * bounceMetrics.lineH) / 1000;
-    bounceVY = (Math.random() < 0.5 ? -1 : 1) * speedPxPerMs;
 
-    bounceLastT = 0;
+    bounceStartT = 0;
+    bounceEl.style.opacity = '1';
     bounceEl.style.transform = `translate(${bounceX.toFixed(2)}px, ${bounceY.toFixed(2)}px)`;
   }
 
   function tickBounce(t) {
     if (!bounceMetrics || !bounceEl) return;
-    if (bounceLastT === 0) bounceLastT = t;
-    // Cap dt to prevent giant jumps after a tab-blur or long frame.
-    const dt = Math.min(t - bounceLastT, 50);
-    bounceLastT = t;
-
-    bounceY += bounceVY * dt;
-
-    const b = bounceBounds();
-    if (bounceY <= b.top)              { bounceY = b.top;              bounceVY =  Math.abs(bounceVY); }
-    if (bounceY + b.textH >= b.bottom) { bounceY = b.bottom - b.textH; bounceVY = -Math.abs(bounceVY); }
-    bounceEl.style.transform = `translate(${bounceX.toFixed(2)}px, ${bounceY.toFixed(2)}px)`;
+    if (bounceStartT === 0) bounceStartT = t;
+    // Cosine wave: starts at 1 (full visible), dips to BLINK_MIN_OPACITY
+    // at half-period, returns to 1. Using rAF + sub-pixel opacity gives
+    // a continuous fade without relying on a CSS transition.
+    const phase = ((t - bounceStartT) % BLINK_PERIOD_MS) / BLINK_PERIOD_MS;
+    const wave = 0.5 + 0.5 * Math.cos(2 * Math.PI * phase); // 1..0..1
+    const opacity = BLINK_MIN_OPACITY + wave * (1 - BLINK_MIN_OPACITY);
+    bounceEl.style.opacity = opacity.toFixed(3);
   }
 
-  // Menu mode renders directly through here (HTML, hit-targets per item).
-  // Entrance + attractor are driven by the rAF loop in machineTick.
+  // Menu mode renders directly through here. The first call after entering
+  // the menu wipes the screen and mounts the folder overlay; subsequent
+  // calls (e.g. after arrow-key nav) just refresh the selection class on
+  // the persistent DOM. Entrance + attractor are driven by the rAF loop
+  // in machineTick.
   function renderMachine() {
-    if (!computerEl) return;
-    if (inMenu) computerEl.innerHTML = frameMachineMenuHTML();
+    if (!computerEl || !inMenu) return;
+    if (menuEl && menuEl.parentNode === computerEl) {
+      updateMenuSelection();
+      return;
+    }
+    computerEl.style.position = 'relative';
+    const lines = Array(SCREEN_H).fill('');
+    computerEl.textContent = frameMachine(lines, false);
+    menuEl = null; // textContent just wiped any prior overlay
+    ensureMenuEl();
+    computerEl.appendChild(menuEl);
+    positionMenuEl();
+    updateMenuSelection();
   }
 
   function machineTick(t) {
@@ -804,11 +862,17 @@ setInterval(updateUptime, 1000); // then every second
     const finalFont = Math.max(7, Math.min(16, Math.floor(idealFont)));
     computerEl.style.fontSize = finalFont + 'px';
 
-    // Font-size shifts the bounce overlay's pixel geometry — re-measure
-    // and clamp so the text doesn't end up outside the new screen rect.
+    // Font-size shifts the bounce overlay's pixel geometry — rescale the
+    // overlay's own font, re-measure, and clamp so the text stays
+    // centered within the new screen rect.
     if (attractorReady && bounceEl && bounceEl.parentNode === computerEl) {
+      applyBounceFontSize();
       bounceMetrics = measureBounceMetrics();
       clampBounce();
+    }
+    // Menu overlay sizing is also tied to the parent grid metrics.
+    if (inMenu && menuEl && menuEl.parentNode === computerEl) {
+      positionMenuEl();
     }
   }
 
@@ -869,12 +933,12 @@ setInterval(updateUptime, 1000); // then every second
     computerEl.addEventListener('focus', () => enterMenu(true));
     computerEl.addEventListener('blur', exitMenu);
 
-    // Selection follows the pointer: highlight the item under the cursor,
+    // Selection follows the pointer: highlight the folder under the cursor,
     // clear the highlight when the cursor is over the frame or any gap
-    // between items. -1 = nothing selected.
+    // between folders. -1 = nothing selected.
     computerEl.addEventListener('mousemove', (e) => {
       if (!inMenu) return;
-      const link = e.target.closest('.menu-item');
+      const link = e.target.closest('.menu-folder');
       let idx = -1;
       if (link) {
         const parsed = parseInt(link.dataset.idx, 10);
@@ -882,16 +946,16 @@ setInterval(updateUptime, 1000); // then every second
       }
       if (idx !== menuIdx) {
         menuIdx = idx;
-        renderMachine();
+        updateMenuSelection();
         syncMenuIcon();
       }
     });
 
     // Click anywhere in the machine while not in menu mode → enter menu mode
     // (covers touch devices that don't fire mouseenter reliably). Clicks on
-    // a menu item navigate.
+    // a folder navigate.
     computerEl.addEventListener('click', (e) => {
-      const link = e.target.closest('.menu-item');
+      const link = e.target.closest('.menu-folder');
       if (link) {
         e.preventDefault();
         const idx = parseInt(link.dataset.idx, 10);

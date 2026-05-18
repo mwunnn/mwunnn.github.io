@@ -98,8 +98,20 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--space-lg);
+  gap: var(--space-sm);
   transition: opacity 420ms ease;
+}
+
+/* Screen-reader-only — the visible name is ASCII art, so the real
+   <h1> is hidden visually but kept for assistive tech and SEO. */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 /* Once the screen zoom begins the stage fades away entirely. */
 body.os-zooming .boot-stage,
@@ -286,6 +298,19 @@ body.os-on .crt {
    drops the rounding so it reads as a full screen. */
 .crt--full { border-radius: 0; }
 
+/* Power-off — the CRT collapses to a bright line, then a dot, on a
+   black field, before the page returns to the galaxy. */
+body.shutting-down { background: #000; }
+body.shutting-down .crt {
+  animation: crt-off 620ms cubic-bezier(.4, 0, .7, 1) forwards;
+  pointer-events: none;
+}
+@keyframes crt-off {
+  0%   { transform: scale(1, 1);     filter: brightness(1.05); }
+  62%  { transform: scale(1, 0.006); filter: brightness(2.8); }
+  100% { transform: scale(0, 0.006); filter: brightness(2.8); opacity: 0; }
+}
+
 /* Scanline + vignette overlay — present while booting, faded
    once the desktop is up so content stays crisp. */
 .crt__overlay {
@@ -361,13 +386,57 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
   border-bottom: 2px solid var(--ink);
   user-select: none;
 }
-.menubar__brand { display: flex; align-items: center; gap: 0.5em; font-weight: 700; }
-.menubar__mark {
-  width: 11px; height: 11px;
-  background: var(--paper);
-  /* a small "bitten" square — nods to a certain fruit, kept abstract */
-  clip-path: polygon(0 0, 70% 0, 70% 30%, 100% 30%, 100% 100%, 0 100%);
+.menubar__brand-wrap { position: relative; }
+.menubar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--paper);
+  background: none;
+  border: 0;
+  padding: 3px 6px;
+  cursor: pointer;
 }
+.menubar__brand:hover,
+.menubar__brand[aria-expanded="true"] {
+  background: rgba(244,241,234,0.16);
+  border-radius: 2px;
+}
+/* The Sidekick, in the apple-logo spot. */
+.menubar__sk { width: 15px; height: 15px; display: block; }
+
+/* Brand dropdown — a small System-style menu. */
+.menubar__menu {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  min-width: 152px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  box-shadow: 4px 5px 0 rgba(10,10,10,0.3);
+  padding: 3px;
+  z-index: 200;
+}
+.menubar__menu[hidden] { display: none; }
+.menubar__menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  color: inherit;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 2px;
+}
+.menubar__menu-item:hover { background: var(--ink); color: var(--paper); }
 .menubar__nav { display: flex; gap: 0.4em; }
 .menubar__nav button {
   background: none;
@@ -513,6 +582,18 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
   flex: 1 1 auto;
   overflow-y: auto;
   padding: var(--space-md);
+}
+
+/* The Static Site window — wider, with an edge-to-edge iframe of
+   the original site filling the body. */
+.win--site { width: min(880px, 92vw); }
+.win--site .win__body { padding: 0; overflow: hidden; }
+.win__site {
+  display: block;
+  width: 100%;
+  height: min(620px, 76vh);
+  border: 0;
+  background: var(--paper);
 }
 
 /* =========================================================
@@ -746,4 +827,67 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
   .crt__overlay {
     background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.5) 100%);
   }
+}
+
+/* =========================================================
+   13. TITLE CARD  (animated entrance of the boot stage)
+   The name banner wipes in like a fresh print, the tagline
+   ripples up word by word, then the computer rises. The
+   entrance plays only while <body> carries .cover-intro
+   (added once per tab by script.js). The base rules below
+   are the resting state — also the skip / reduced-motion
+   state, since the keyframes' end frames match them exactly.
+   ========================================================= */
+.cover-banner {
+  margin: 0;
+  font-family: var(--mono-sys);
+  font-size: clamp(0.32rem, 1.15vw, 0.6rem);
+  line-height: 1.05;
+  font-weight: 700;
+  white-space: pre;
+  color: var(--ink);
+}
+.cover-tagline {
+  display: flex;
+  gap: 0.55em;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+.cover-tagline span { display: inline-block; }
+
+/* The wipe: banner revealed left-to-right, like a print head. */
+body.cover-intro .cover-banner {
+  animation: cover-wipe 900ms var(--zoom-ease) both;
+}
+/* The ripple: each tagline word rises a beat after the last. */
+body.cover-intro .cover-tagline span {
+  animation: cover-rise 460ms ease both;
+}
+body.cover-intro .cover-tagline span:nth-child(1) { animation-delay: 760ms; }
+body.cover-intro .cover-tagline span:nth-child(2) { animation-delay: 850ms; }
+body.cover-intro .cover-tagline span:nth-child(3) { animation-delay: 940ms; }
+body.cover-intro .cover-tagline span:nth-child(4) { animation-delay: 1030ms; }
+body.cover-intro .cover-tagline span:nth-child(5) { animation-delay: 1120ms; }
+/* Then the machine rises into place, and finally the caption. */
+body.cover-intro .computer {
+  animation: cover-rise 620ms var(--zoom-ease) both;
+  animation-delay: 1400ms;
+}
+body.cover-intro .stage-caption {
+  animation: cover-rise 500ms ease both;
+  animation-delay: 2100ms;
+}
+/* The power button is inert until the entrance has settled. */
+body.cover-intro .power-btn { pointer-events: none; }
+
+@keyframes cover-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+@keyframes cover-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

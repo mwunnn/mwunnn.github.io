@@ -1,483 +1,1109 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Matthew Trefon — Personal Site</title>
-  <meta name="description" content="A personal website by Matthew Trefon.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matthew Trefon</title>
 
-  <!-- Google Fonts: serifs for headers, mono for the printer/terminal voice -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!--
+  INDEX.HTML — the site's main page.
 
-  <link rel="stylesheet" href="style.css">
+  An ASCII solar system: flat elliptical orbits carrying planets,
+  a slowly rotating star field behind them, and a true 3D computer
+  spinning at the centre (the "sun"). Switch the computer on to
+  boot into MATTHEW_OS (desktop/index.html); the original static
+  site lives inside the OS, in the "Static Site" window.
+
+  Self-contained — inline CSS + JS, no dependencies.
+-->
+
+<style>
+  :root {
+    --ink: #0a0a0a;
+    --paper: #f4f1ea;
+    --space: #0b0b10;
+    --star: #f4f1ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  body {
+    background: var(--space);
+    color: var(--star);
+    overflow: hidden;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, 'Cascadia Mono', monospace;
+  }
+
+  /* The sky — one big monospace canvas, centred on the viewport. */
+  #sky {
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: pre;
+    line-height: 1;
+    letter-spacing: 0;
+    user-select: none;
+    font-variant-ligatures: none;
+    font-feature-settings: "liga" 0, "calt" 0;
+  }
+
+  /* The name — a crisp HTML overlay above the galaxy. Rendered by
+     the browser's font engine, not the character grid, so it stays
+     sharp at any size. Its font-size is set from JS. */
+  .cp-banner {
+    position: fixed;
+    left: 50%;
+    top: 21%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    font-family: inherit;
+    line-height: 1.04;
+    white-space: pre;
+    pointer-events: none;
+    z-index: 5;
+    transition: opacity 520ms ease;
+  }
+
+  /* The name again, parked top-left — fades in on hover as the
+     centred name fades out, so it reads as relocating to the corner. */
+  .cp-corner {
+    position: fixed;
+    top: 22px;
+    left: 28px;
+    margin: 0;
+    font-family: inherit;
+    line-height: 1.04;
+    white-space: pre;
+    pointer-events: none;
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 520ms ease;
+  }
+
+  /* HUD — minimal prototype controls. */
+  .hud {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 12px 16px;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+  .hud__label { opacity: 0.55; }
+  .hud__btns { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
+  /* Size slider — monochrome, matched to the HUD. */
+  .hud__size { display: flex; align-items: center; gap: 6px; }
+  .hud__size input {
+    accent-color: currentColor;
+    width: 96px;
+    cursor: pointer;
+  }
+  .hud button {
+    font: inherit;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: inherit;
+    background: transparent;
+    border: 1px solid currentColor;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .hud button:hover { background: currentColor; color: var(--space); }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+</style>
 </head>
 <body>
-  <!-- ============== BACKGROUND GLYPHS (scattered marginalia) ============== -->
-  <div class="bg-glyphs" id="bgGlyphs" aria-hidden="true"></div>
 
-  <div class="page">
+  <h1 class="sr-only">Matthew Trefon</h1>
 
-    <!-- ============== CROP MARKS (corners of the page) ============== -->
-    <span class="crop tl"></span>
-    <span class="crop tr"></span>
-    <span class="crop bl"></span>
-    <span class="crop br"></span>
+  <pre id="sky" aria-hidden="true"></pre>
 
-    <!-- ============== SPINE TEXT (rotated, runs up the right edge) ============== -->
-    <div class="spine-text">MOD. PORTFOLIO ▮ v2.0 ▮ CIRCA 2026 ▮ SET IN DM SERIF & EB GARAMOND</div>
+  <!-- The name — a crisp HTML overlay. The galaxy is held out of its
+       letterform silhouette (see computeNameMask). -->
+  <pre class="cp-banner" id="cpBanner" aria-hidden="true"></pre>
 
-    <!-- ============== NAV ============== -->
-    <nav class="nav-bar mono">
-      <a href="#about">[01] ABOUT</a>
-      <a href="#resume">[02] RESUME</a>
-      <a href="#portfolio">[03] PORTFOLIO</a>
-      <a href="#blog">[04] BLOG</a>
-      <a href="#socials">[05] SOCIALS</a>
-      <a href="desktop/index.html" style="margin-left: auto;">[OS] DESKTOP</a>
-      <a href="styleguide.html">[*] SPECIMEN</a>
-    </nav>
+  <!-- A second copy of the name, parked in the corner — it fades in
+       on hover as the centred name fades out. -->
+  <pre class="cp-corner" id="cpCorner" aria-hidden="true"></pre>
 
-    <!-- ============== HERO ============== -->
-    <header class="hero">
-      <div class="hero-main">
-        <h1 class="sr-only">Matthew Trefon</h1>
-        <pre class="ascii-banner" aria-hidden="true">
-███╗   ███╗ █████╗ ████████╗████████╗██╗  ██╗███████╗██╗    ██╗
-████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██║  ██║██╔════╝██║    ██║
-██╔████╔██║███████║   ██║      ██║   ███████║█████╗  ██║ █╗ ██║
-██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══██║██╔══╝  ██║███╗██║
-██║ ╚═╝ ██║██║  ██║   ██║      ██║   ██║  ██║███████╗╚███╔███╔╝
-╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝
-████████╗██████╗ ███████╗███████╗ ██████╗ ███╗   ██╗
-╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║
-   ██║   ██████╔╝█████╗  █████╗  ██║   ██║██╔██╗ ██║
-   ██║   ██╔══██╗██╔══╝  ██╔══╝  ██║   ██║██║╚██╗██║
-   ██║   ██║  ██║███████╗██║     ╚██████╔╝██║ ╚████║
-   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝
-        </pre>
-        <!-- ============== INTERFERENCE FIELD ============== -->
-        <figure class="ascii-field-fig">
-          <div class="ascii-stage">
-            <div class="ascii-field" id="asciiField" aria-hidden="true"></div>
-          </div>
-        </figure>
-        <p class="pull-quote">
-          “The Secret of your future is hidden in your Daily Routine”
-          <cite>— Unknown</cite>
-        </p>
-      </div>
-
-      <aside class="hero-side">
-        <pre class="ascii-computer" id="asciiComputer" role="navigation" aria-label="Computer screen — hover or focus to open the main menu, then arrow keys and Enter to navigate"></pre>
-        <div class="repeating-tagline" aria-hidden="true">
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-          <p>Technical · Creative · Marketing</p>
-        </div>
-        <!-- Sidekick — second instance, tucked under the diminishing tagline. -->
-        <svg class="sidekick" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-label="Sidekick" role="img">
-          <g class="sk-body">
-            <rect x="6"  y="0"  width="2"  height="3"/>
-            <rect x="14" y="0"  width="2"  height="3"/>
-            <rect x="6"  y="3"  width="3"  height="1"/>
-            <rect x="13" y="3"  width="3"  height="1"/>
-            <rect x="7"  y="4"  width="9"  height="1"/>
-            <rect x="5"  y="5"  width="12" height="1"/>
-            <rect x="4"  y="6"  width="15" height="1"/>
-            <rect x="3"  y="7"  width="17" height="1"/>
-            <rect x="3"  y="8"  width="18" height="2"/>
-            <rect x="3"  y="10" width="4"  height="2"/>
-            <rect x="9"  y="10" width="8"  height="2"/>
-            <rect x="19" y="10" width="2"  height="2"/>
-            <rect x="3"  y="12" width="18" height="1"/>
-            <rect x="4"  y="13" width="17" height="1"/>
-            <rect x="5"  y="14" width="15" height="1"/>
-            <rect x="4"  y="15" width="15" height="1"/>
-            <rect x="7"  y="16" width="11" height="1"/>
-            <rect x="7"  y="17" width="2"  height="2"/>
-            <rect x="16" y="17" width="2"  height="2"/>
-            <rect x="6"  y="19" width="4"  height="2"/>
-            <rect x="15" y="19" width="4"  height="2"/>
-          </g>
-          <g class="sk-arm">
-            <g class="sk-arm-a">
-              <rect x="0" y="12" width="1" height="1"/>
-              <rect x="0" y="13" width="2" height="1"/>
-              <rect x="1" y="14" width="1" height="1"/>
-              <rect x="1" y="15" width="1" height="1"/>
-              <rect x="1" y="16" width="4" height="1"/>
-            </g>
-            <g class="sk-arm-b">
-              <rect x="0" y="14" width="1" height="1"/>
-              <rect x="0" y="15" width="2" height="1"/>
-              <rect x="1" y="16" width="4" height="1"/>
-            </g>
-          </g>
-          <g class="sk-eyes">
-            <rect x="7"  y="10" width="2" height="2"/>
-            <rect x="17" y="10" width="2" height="2"/>
-          </g>
-        </svg>
-      </aside>
-    </header>
-
-    <!-- Stepped grayscale strip -->
-    <div class="gradient-strip" aria-hidden="true">
-      <div style="background:#f4f1ea"></div>
-      <div style="background:#dad6c8"></div>
-      <div style="background:#bfbaa8"></div>
-      <div style="background:#a39d8b"></div>
-      <div style="background:#85806f"></div>
-      <div style="background:#686355"></div>
-      <div style="background:#4c483c"></div>
-      <div style="background:#322f26"></div>
-      <div style="background:#1c1a14"></div>
-      <div style="background:#0a0a0a"></div>
-    </div>
-
-    <!-- ASCII divider — reusable element you'll see between sections -->
-    <pre class="ascii-rule" aria-hidden="true">
-═══════════════════════════════════════════════════════════════════════════════
-    ◆          ◆          ◆          ◆          ◆          ◆          ◆
-═══════════════════════════════════════════════════════════════════════════════
-    </pre>
-
-    <!-- ============================== ABOUT ============================== -->
-    <section id="about">
-      <div class="section-head">
-        <span class="num">§ 01</span>
-        <h2>About</h2>
-        <span class="meta">Pp. 1–4</span>
-      </div>
-
-      <div class="about">
-        <div>
-          <p>
-            One paragraph that introduces you. Where you live, what you do,
-            and the thread running through it all. Keep it short — first
-            paragraphs do the heavy lifting.
-          </p>
-          <p>
-            A second paragraph for texture. The hobbies, the obsessions, the
-            slightly embarrassing detail you’re proud of. Specifics beat
-            generics every time.
-          </p>
-          <p>
-            A third paragraph that points outward — what you’re curious about
-            now, what you’re reading, what you’d like to be doing more of.
-          </p>
-        </div>
-
-        <!-- Classic Mac window: System 1-style stripes & close box -->
-        <div class="mac-window">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">about_me.txt</span>
-          </div>
-          <div class="mac-body">
-            <!-- Sidekick — pixel data extracted from the box-shadow CSS reference. -->
-            <svg class="sidekick" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-label="Sidekick" role="img">
-              <g class="sk-body">
-                <!-- antennae -->
-                <rect x="6"  y="0"  width="2"  height="3"/>
-                <rect x="14" y="0"  width="2"  height="3"/>
-                <!-- antenna shoulders -->
-                <rect x="6"  y="3"  width="3"  height="1"/>
-                <rect x="13" y="3"  width="3"  height="1"/>
-                <!-- head taper -->
-                <rect x="7"  y="4"  width="9"  height="1"/>
-                <rect x="5"  y="5"  width="12" height="1"/>
-                <rect x="4"  y="6"  width="15" height="1"/>
-                <rect x="3"  y="7"  width="17" height="1"/>
-                <!-- upper body -->
-                <rect x="3"  y="8"  width="18" height="2"/>
-                <!-- eye row body (eyes are gaps; paper shows through) -->
-                <rect x="3"  y="10" width="4"  height="2"/>
-                <rect x="9"  y="10" width="8"  height="2"/>
-                <rect x="19" y="10" width="2"  height="2"/>
-                <!-- mid body rows (without arm parts) -->
-                <rect x="3"  y="12" width="18" height="1"/>
-                <rect x="4"  y="13" width="17" height="1"/>
-                <rect x="5"  y="14" width="15" height="1"/>
-                <rect x="4"  y="15" width="15" height="1"/>
-                <rect x="7"  y="16" width="11" height="1"/>
-                <!-- legs -->
-                <rect x="7"  y="17" width="2"  height="2"/>
-                <rect x="16" y="17" width="2"  height="2"/>
-                <!-- feet -->
-                <rect x="6"  y="19" width="4"  height="2"/>
-                <rect x="15" y="19" width="4"  height="2"/>
-              </g>
-              <!-- Tail — two pixel-art frames; CSS alternates their opacity
-                   for a discrete sprite-style wag (no rotation/easing). -->
-              <g class="sk-arm">
-                <g class="sk-arm-a">
-                  <!-- Frame A: tail curled up, tip at upper-left -->
-                  <rect x="0" y="12" width="1" height="1"/>
-                  <rect x="0" y="13" width="2" height="1"/>
-                  <rect x="1" y="14" width="1" height="1"/>
-                  <rect x="1" y="15" width="1" height="1"/>
-                  <rect x="1" y="16" width="4" height="1"/>
-                </g>
-                <g class="sk-arm-b">
-                  <!-- Frame B: tail flicked down, tip dropped, curl shorter -->
-                  <rect x="0" y="14" width="1" height="1"/>
-                  <rect x="0" y="15" width="2" height="1"/>
-                  <rect x="1" y="16" width="4" height="1"/>
-                </g>
-              </g>
-              <!-- Eye covers — normally invisible; opacity flashes to 1 to blink. -->
-              <g class="sk-eyes">
-                <rect x="7"  y="10" width="2" height="2"/>
-                <rect x="17" y="10" width="2" height="2"/>
-              </g>
-            </svg>
-            <dl class="stats">
-              <dt>STATUS</dt>      <dd>● ONLINE</dd>
-              <dt>LOCATION</dt>    <dd>YOUR CITY</dd>
-              <dt>CURRENTLY</dt>   <dd>BUILDING THINGS</dd>
-              <dt>READING</dt>     <dd>LASERWRITER II</dd>
-              <dt>UPTIME</dt>      <dd id="uptime">--</dd>
-            </dl>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <pre class="ascii-rule" aria-hidden="true">
-═══════════════════════════════════════════════════════════════════════════════
-    ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░  ▓▒░
-═══════════════════════════════════════════════════════════════════════════════
-    </pre>
-
-    <!-- ============================== RESUME ============================== -->
-    <section id="resume">
-      <div class="section-head">
-        <span class="num">§ 02</span>
-        <h2>Resume</h2>
-        <span class="meta">Curriculum Vitae</span>
-      </div>
-
-      <p>Resume content goes here.</p>
-    </section>
-
-    <pre class="ascii-rule" aria-hidden="true">
-═══════════════════════════════════════════════════════════════════════════════
-       ✦   ✧   ✦   ✧   ✦   ✧   ✦   ✧   ✦   ✧   ✦   ✧   ✦   ✧   ✦   ✧   ✦
-═══════════════════════════════════════════════════════════════════════════════
-    </pre>
-
-    <!-- ============================== PORTFOLIO ============================== -->
-    <section id="portfolio">
-      <div class="section-head">
-        <span class="num">§ 03</span>
-        <h2>Portfolio</h2>
-        <span class="meta">Selected · 2022–2026</span>
-      </div>
-
-      <div class="work-grid">
-        <!-- Each project card is a tiny Mac window. -->
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">project_01.app</span>
-          </div>
-          <div class="swatch lines-h"></div>
-          <div class="card-body">
-            <div class="label">2026 · PROJECT</div>
-            <div class="card-title">Project Title One</div>
-            <div class="size mono">└─ 142 KB</div>
-          </div>
-        </a>
-
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">website.html</span>
-          </div>
-          <div class="swatch swatch-grad"></div>
-          <div class="card-body">
-            <div class="label">2025 · SITE</div>
-            <div class="card-title">A Quiet Little Website</div>
-            <div class="size mono">└─ 27 KB</div>
-          </div>
-        </a>
-
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">tool.exe</span>
-          </div>
-          <div class="swatch lines-v"></div>
-          <div class="card-body">
-            <div class="label">2025 · TOOL</div>
-            <div class="card-title">Small Useful Tool</div>
-            <div class="size mono">└─ 89 KB</div>
-          </div>
-        </a>
-
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">essay.doc</span>
-          </div>
-          <div class="swatch lines-d"></div>
-          <div class="card-body">
-            <div class="label">2024 · ESSAY</div>
-            <div class="card-title">An Essay With A Long Title</div>
-            <div class="size mono">└─ 12 KB</div>
-          </div>
-        </a>
-
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">talk.pdf</span>
-          </div>
-          <div class="swatch swatch-solid"></div>
-          <div class="card-body">
-            <div class="label">2024 · TALK</div>
-            <div class="card-title">A Talk I Gave Once</div>
-            <div class="size mono">└─ 4 MB</div>
-          </div>
-        </a>
-
-        <a class="mac-window work-card" href="#">
-          <div class="mac-titlebar">
-            <span class="close-box"></span>
-            <span class="title">side.zip</span>
-          </div>
-          <div class="swatch swatch-cross"></div>
-          <div class="card-body">
-            <div class="label">2023 · SIDE</div>
-            <div class="card-title">A Weekend Experiment</div>
-            <div class="size mono">└─ 256 KB</div>
-          </div>
-        </a>
-      </div>
-    </section>
-
-    <pre class="ascii-rule" aria-hidden="true">
-═══════════════════════════════════════════════════════════════════════════════
-   ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪
-═══════════════════════════════════════════════════════════════════════════════
-    </pre>
-
-    <!-- ============================== BLOG ============================== -->
-    <section id="blog">
-      <div class="section-head">
-        <span class="num">§ 04</span>
-        <h2>Blog</h2>
-        <span class="meta">Most Recent First</span>
-      </div>
-
-      <!-- Styled like a classic file directory listing -->
-      <pre class="dir-header mono">
-SIZE    DATE       NAME                                              READ
-────    ─────────  ──────────────────────────────────────────────    ────</pre>
-
-      <ul class="writing-list">
-        <li>
-          <span class="size mono">5K</span>
-          <span class="date mono">04·12·2026</span>
-          <span class="title"><a href="#">▸ Notes on Making Small Things</a></span>
-          <span class="read mono">5 min →</span>
-        </li>
-        <li>
-          <span class="size mono">8K</span>
-          <span class="date mono">02·28·2026</span>
-          <span class="title"><a href="#">▸ Why I Keep a Plain-Text Journal</a></span>
-          <span class="read mono">8 min →</span>
-        </li>
-        <li>
-          <span class="size mono">3K</span>
-          <span class="date mono">01·09·2026</span>
-          <span class="title"><a href="#">▸ An Argument for Boring Tools</a></span>
-          <span class="read mono">3 min →</span>
-        </li>
-        <li>
-          <span class="size mono">6K</span>
-          <span class="date mono">11·22·2025</span>
-          <span class="title"><a href="#">▸ The First Thing I Built That Worked</a></span>
-          <span class="read mono">6 min →</span>
-        </li>
-        <li>
-          <span class="size mono">4K</span>
-          <span class="date mono">10·03·2025</span>
-          <span class="title"><a href="#">▸ A Field Guide to My Bookmarks</a></span>
-          <span class="read mono">4 min →</span>
-        </li>
-      </ul>
-    </section>
-
-    <pre class="ascii-rule" aria-hidden="true">
-═══════════════════════════════════════════════════════════════════════════════
-        ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░    ░▒▓█▓▒░
-═══════════════════════════════════════════════════════════════════════════════
-    </pre>
-
-    <!-- ============================== SOCIALS ============================== -->
-    <section id="socials">
-      <div class="section-head">
-        <span class="num">§ 05</span>
-        <h2>Socials</h2>
-        <span class="meta">Find Me Around</span>
-      </div>
-
-      <div class="contact">
-        <div>
-          <h3>Get<br><em>in touch.</em></h3>
-<pre class="ascii-mailbox" aria-hidden="true">
-       _______________
-      |  ___________  |
-      | |           | |
-      | |   YOU     | |
-      | |   GOT     | |
-      | |   MAIL!   | |
-      | |___________| |
-      |_______________|
-         ||       ||
-         ||       ||
-        /__\     /__\
-</pre>
-        </div>
-        <ul class="contact-list">
-          <li><span class="label mono">EMAIL</span><a href="mailto:you@example.com">you@example.com</a></li>
-          <li><span class="label mono">GITHUB</span><a href="#">@yourhandle</a></li>
-          <li><span class="label mono">ARE.NA</span><a href="#">@yourhandle</a></li>
-          <li><span class="label mono">MASTODON</span><a href="#">@you@instance.social</a></li>
-          <li><span class="label mono">RSS</span><a href="#">/feed.xml</a></li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Closing gradient bar -->
-    <div class="gradient-strip smooth" aria-hidden="true"></div>
-
-    <!-- ============================== FOOTER ============================== -->
-    <footer>
-<pre class="ascii-signoff" aria-hidden="true">
-       ╔══════════════════════════════════════════════════════════╗
-       ║   THANKS FOR VISITING ▪ MADE BY HAND ▪ NO ROBOTS HARMED  ║
-       ╚══════════════════════════════════════════════════════════╝
-                              ▼  ▼  ▼
-                              END OF FILE
-</pre>
-      <div class="footer-meta mono">
-        <span>© 2026 · MATTHEW TREFON</span>
-        <span>VISITOR #<span id="visitor">00042</span></span>
-        <span>END OF JOB ▮</span>
-      </div>
-    </footer>
+  <div class="hud">
+    <span class="hud__label">Fig. — Orrery / prototype</span>
+    <span class="hud__btns">
+      <label class="hud__size">Computer
+        <input id="size" type="range" min="0.06" max="0.5" step="0.01" value="0.28">
+      </label>
+      <label class="hud__size">Name
+        <input id="namesize" type="range" min="0.12" max="0.5" step="0.01" value="0.28">
+      </label>
+      <button id="mode"     type="button">Mode: Galaxy</button>
+      <button id="spacing"  type="button">Rings: Wide</button>
+      <button id="pause"    type="button">Pause</button>
+    </span>
   </div>
 
-  <script src="script.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var sky = document.getElementById('sky');
+
+  /* =========================================================
+     THE CENTRE PIECE — a true 3D computer.
+     A vintage all-in-one modelled as shaded boxes, drawn straight
+     into the galaxy grid through a depth buffer, so the starfield
+     can be held out of its actual silhouette. See drawComputer3D.
+     ========================================================= */
+  var CAM_Z        = 5.0;     // camera distance, in model units
+  var DEFAULT_TILT = 0.34;    // downward view tilt (radians)
+  var AMBIENT      = 0.18;    // floor light, so shadowed faces aren't black
+  var RAMP         = '.,-~:;=!*#$@';     // glyph ramp, sparse → dense ink
+  var COMP_REST_ANGLE = 0;               // resting yaw — the computer faces us
+
+  // The computer eases its orientation toward the cursor — a gentle
+  // "look at you" tilt. targetYaw/Pitch are set on pointer move;
+  // curYaw/Pitch chase them each frame.
+  var YAW_RANGE   = 0.45;    // max yaw swing toward the cursor (radians)
+  var PITCH_RANGE = 0.28;    // max pitch swing toward the cursor
+  var TRACK_EASE  = 0.10;    // per-frame approach toward the target
+  var targetYaw   = COMP_REST_ANGLE, curYaw   = COMP_REST_ANGLE;
+  var targetPitch = DEFAULT_TILT,    curPitch = DEFAULT_TILT;
+
+  // Hover — when the cursor is over the computer it eases up to
+  // HOVER_MAX× its size, and the name fades transparent.
+  var HOVER_MAX  = 1.5;      // computer enlarges to this on hover
+  var HOVER_EASE = 0.14;     // per-frame approach of the hover scale
+  var hovering   = false;    // is the cursor over the computer?
+  var hoverScale = 1.0;      // current enlargement, eases 1 ↔ HOVER_MAX
+  var engaged    = false;    // computer is the focus (hovered or booting)
+
+  // Boot transition — clicking the woken computer flies the "Turn On"
+  // message off the screen character-by-character in discrete,
+  // tetris-like cell steps. osPhase: 'idle' → 'flyoff' → 'on'. The
+  // flying characters are coloured DOM spans that cycle the rainbow.
+  var osPhase      = 'idle';
+  var bootChars    = [];     // [{ch,col,row,vx,vy}] during 'flyoff'
+  var bootSpans    = [];     // matching DOM <span>s, one per character
+  var bootStep     = 0;      // step counter — drives the rainbow cycle
+  var BOOT_STEP    = 0.15;   // seconds between discrete jumps
+  var bootNextStep = 0;
+  var lastT        = 0;
+  var RAINBOW = ['#ff4136','#ff851b','#ffdc00','#2ecc40',
+                 '#00bcd4','#0074d9','#b10dc9'];
+
+  // OS launch — once the galaxy has faded, after LAUNCH_DELAY a paper
+  // panel expands from the centre and the MATTHEW_OS page opens.
+  var LAUNCH_DELAY = 1.5;    // seconds after the galaxy has faded
+  var launchAt     = -1;     // scheduled launch time (s); -1 = unscheduled
+  var launched     = false;
+
+  // Light direction (world space, normalised) — upper front-left.
+  var LX, LY, LZ;
+  (function () {
+    var lx = -0.45, ly = 0.62, lz = 0.80;
+    var L = Math.sqrt(lx*lx + ly*ly + lz*lz);
+    LX = lx/L; LY = ly/L; LZ = lz/L;
+  })();
+
+  function cross(a, b) {
+    return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+  }
+  function normalize(v) {
+    var L = Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]) || 1;
+    return [v[0]/L, v[1]/L, v[2]/L];
+  }
+  // A flat quad: corner `o`, edge vectors `u`/`v`, base reflectance.
+  // An optional fixed `glyph` overrides Lambert shading — used for
+  // the screen, which should read dark regardless of the light.
+  function quad(o, u, v, albedo, glyph) {
+    return { o:o, u:u, v:v, albedo:albedo, glyph:glyph || null,
+             n:normalize(cross(u, v)), pts:null };
+  }
+  // The six outward-facing quads of an axis-aligned box.
+  function boxFaces(x0,y0,z0, x1,y1,z1, albedo) {
+    var dx = x1-x0, dy = y1-y0, dz = z1-z0;
+    return [
+      quad([x0,y0,z1], [dx,0,0],  [0,dy,0],  albedo),  // front  +Z
+      quad([x1,y0,z0], [-dx,0,0], [0,dy,0],  albedo),  // back   -Z
+      quad([x1,y0,z1], [0,0,-dz], [0,dy,0],  albedo),  // right  +X
+      quad([x0,y0,z0], [0,0,dz],  [0,dy,0],  albedo),  // left   -X
+      quad([x0,y1,z1], [dx,0,0],  [0,0,-dz], albedo),  // top    +Y
+      quad([x0,y0,z0], [dx,0,0],  [0,0,dz],  albedo)   // bottom -Y
+    ];
+  }
+
+  // The model — a monitor housing, a base, plus a dark glass screen
+  // and drive slot sitting just proud of the front face.
+  var FACES = []
+    .concat(boxFaces(-0.80,-0.55,-0.55,  0.80, 0.85, 0.55, 0.95))   // housing
+    .concat(boxFaces(-0.92,-0.85,-0.62,  0.92,-0.55, 0.62, 0.78));  // base
+  FACES.push(quad([-0.55,-0.25,0.57], [1.10,0,0], [0,0.85,0], 0.20, ' ')); // screen — blank, shows the black backdrop
+  FACES.push(quad([-0.30,-0.47,0.58], [0.60,0,0], [0,0.07,0], 0.08)); // slot
+
+  // Widest horizontal sweep and height of the model — used to fit
+  // it comfortably to the grid.
+  var MODEL_H    = 1.70;
+  var MODEL_SPAN = 2.70;
+
+  // The name — chunky block lettering. It renders as a crisp HTML
+  // overlay (.cp-banner); the galaxy is held out of its letterform
+  // silhouette by computeNameMask(), which reads BANNER directly.
+  var BANNER = [
+    '███╗   ███╗ █████╗ ████████╗████████╗██╗  ██╗███████╗██╗    ██╗',
+    '████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██║  ██║██╔════╝██║    ██║',
+    '██╔████╔██║███████║   ██║      ██║   ███████║█████╗  ██║ █╗ ██║',
+    '██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══██║██╔══╝  ██║███╗██║',
+    '██║ ╚═╝ ██║██║  ██║   ██║      ██║   ██║  ██║███████╗╚███╔███╔╝',
+    '╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝',
+    '████████╗██████╗ ███████╗███████╗ ██████╗ ███╗   ██╗',
+    '╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║',
+    '   ██║   ██████╔╝█████╗  █████╗  ██║   ██║██╔██╗ ██║',
+    '   ██║   ██╔══██╗██╔══╝  ██╔══╝  ██║   ██║██║╚██╗██║',
+    '   ██║   ██║  ██║███████╗██║     ╚██████╔╝██║ ╚████║',
+    '   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝'
+  ];
+  var NAME_H = BANNER.length;
+  var NAME_W = (function () {
+    var w = 0;
+    for (var i = 0; i < BANNER.length; i++) {
+      if (BANNER[i].length > w) w = BANNER[i].length;
+    }
+    return w;
+  })();
+  // The name's size — the fraction of the viewport width the full
+  // lettering spans. nameFrac drives the centred name (HUD slider);
+  // NAME_CORNER_FRAC is the smaller top-left copy shown on hover.
+  var nameFrac = 0.28;
+  var NAME_CORNER_FRAC = 0.16;
+
+  /* =========================================================
+     ORBITS — each carries one planet. `rf` is the horizontal
+     radius as a fraction of the grid width; inner orbits run
+     faster. One planet also keeps a little moon.
+     ========================================================= */
+  // Radii (rf) use a progressively widening gap, so the rings fan
+  // out the way a real solar system does — the outer two reach
+  // past the viewport edges, sweeping off-frame.
+  var ORBITS = [
+    { rf: 0.085, spd:  0.58, glyph: 'o' },
+    { rf: 0.135, spd: -0.44, glyph: 'O' },
+    { rf: 0.193, spd:  0.34, glyph: 'o', moon: { r: 3.0, spd: 1.9 } },
+    { rf: 0.259, spd: -0.27, glyph: '@' },
+    { rf: 0.333, spd:  0.21, glyph: 'O' },
+    { rf: 0.415, spd: -0.165, glyph: '0' },
+    { rf: 0.505, spd:  0.130, glyph: '@', moon: { r: 3.6, spd: 1.5 } },
+    { rf: 0.603, spd: -0.100, glyph: 'O' },
+    { rf: 0.709, spd:  0.078, glyph: '0' }
+  ];
+  // Random starting angles, fixed for the session.
+  ORBITS.forEach(function (o) {
+    o.phase = Math.random() * Math.PI * 2;
+    o.rank  = Math.random();                 // fade-out order
+    if (o.moon) o.moon.phase = Math.random() * Math.PI * 2;
+  });
+
+  // Two ring layouts to compare. WIDE is the progressively-fanning
+  // set above; TIGHT packs the rings close with an even gap. The
+  // HUD's "Rings" button flips between them.
+  var WIDE_RF  = ORBITS.map(function (o) { return o.rf; });
+  var TIGHT_RF = [0.105, 0.145, 0.185, 0.225, 0.265, 0.305, 0.345, 0.385, 0.425];
+  var spacing  = 'wide';
+  function applySpacing() {
+    var set = spacing === 'wide' ? WIDE_RF : TIGHT_RF;
+    ORBITS.forEach(function (o, i) { o.rf = set[i]; });
+  }
+
+  // Display mode — 'galaxy' (spiral) by default, or 'orrery' (rings).
+  var mode = 'galaxy';
+
+  // How flat the orbits look on screen (ellipse height / width).
+  var FLATTEN = 0.30;
+  // How fast the whole star field rotates (radians/sec) — very slow.
+  var SKY_SPIN = 0.018;
+
+  // Galaxy mode — a rotating two-arm spiral disc.
+  var GAL_FLATTEN = 0.42;   // viewing tilt of the disc (squash on screen)
+  var GAL_SPIN    = 0.085;  // rotation speed (radians/sec)
+
+  // Galaxy fade — the starfield dissolves: it fades IN on load, then
+  // back OUT once the boot begins. 1 = full, 0 = gone. Each star/orbit
+  // carries a stable `rank`; it stops drawing once rank ≥ galaxyFade.
+  var galaxyFade   = 0;         // starts hidden — fades in on entrance
+  var GAL_FADE_IN  = 0.028;     // entrance dissolve-in — gentle
+  var GAL_FADE_OUT = 0.05;      // boot-out dissolve-away
+
+  // Entrance — the galaxy, computer, and name all dissolve in
+  // together. compReveal drives the computer (its sample points
+  // reveal in rank order) and the name's fade, in lockstep with
+  // the galaxy fade. A slow, smooth, simultaneous arrival.
+  var compReveal       = 0;
+  var COMP_REVEAL_EASE = 0.028;     // matches GAL_FADE_IN — in lockstep
+
+  /* =========================================================
+     GRID — sized to fill the viewport. Measured from a live
+     character so the geometry is exact at any font size.
+     ========================================================= */
+  var cols, rows, cx, cy, aspect, grid, charW, charH;
+  var STARS = [];
+  var GALAXY = [];
+
+  function measure() {
+    var fs = Math.max(11, Math.min(20, window.innerWidth / 90));
+    sky.style.fontSize = fs + 'px';
+
+    var probe = document.createElement('span');
+    probe.textContent = '0'.repeat(80);
+    probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre;';
+    sky.appendChild(probe);
+    charW = probe.getBoundingClientRect().width / 80;
+    sky.removeChild(probe);
+    charH = fs;                        // line-height is 1, so a cell is fs tall
+
+    aspect = charH / charW;            // a cell is this many times taller than wide
+    cols = Math.floor(window.innerWidth  / charW);
+    rows = Math.floor(window.innerHeight / charH);
+    if (cols % 2 === 0) cols--;         // odd counts give a true centre cell
+    if (rows % 2 === 0) rows--;
+    cols = Math.max(cols, 30);
+    rows = Math.max(rows, 20);
+    cx = (cols - 1) / 2;
+    cy = (rows - 1) / 2;
+
+    // Reusable buffer.
+    grid = [];
+    for (var r = 0; r < rows; r++) grid.push(new Array(cols));
+
+    buildStars();
+    buildGalaxy();
+    setupScene();
+  }
+
+  function buildStars() {
+    STARS = [];
+    var n = Math.round(cols * rows * 0.10);
+    // Reach far enough that stars cover the corners of the viewport.
+    var maxRad = Math.max(rows, cols / aspect) * 0.72;
+    for (var i = 0; i < n; i++) {
+      STARS.push({
+        // Polar around the centre; radius measured in row-cells.
+        rad:  Math.pow(Math.random(), 0.7) * maxRad,
+        ang:  Math.random() * Math.PI * 2,
+        tw:   Math.random() * Math.PI * 2,   // twinkle phase
+        b:    Math.random(),                 // base brightness
+        rank: Math.random()                  // fade-out order
+      });
+    }
+  }
+
+  // Build the spiral galaxy as a fixed cloud of particles. Two
+  // logarithmic-ish arms wind out from a dense bright core; each
+  // particle is stored in polar form (radius + angle) so the whole
+  // disc can be rigidly rotated each frame.
+  function buildGalaxy() {
+    GALAXY = [];
+    var maxR   = Math.min(cols * 0.58, rows * 1.35);
+    var ARMS   = 2;
+    var perArm = 820;
+    var TURNS  = 1.35;             // how far each arm winds around
+
+    for (var a = 0; a < ARMS; a++) {
+      var armOffset = a * (Math.PI * 2 / ARMS);
+      for (var i = 0; i < perArm; i++) {
+        var f = i / perArm;                       // 0 (core) → 1 (rim)
+        var rad = maxR * Math.pow(f, 0.62);       // denser toward the core
+        var ang = armOffset + f * TURNS * Math.PI * 2;
+        // Fuzz the arm — wider/blurrier near the core, tighter at the rim.
+        ang += (Math.random() - 0.5) * (0.62 - 0.34 * f);
+        rad += (Math.random() - 0.5) * maxR * 0.07;
+        var b = (1 - f) * 0.55 + Math.random() * 0.6;
+        GALAXY.push({ rad: rad, ang: ang, b: b, rank: Math.random() });
+      }
+    }
+    // Dense, bright galactic core.
+    for (var k = 0; k < 340; k++) {
+      GALAXY.push({
+        rad:  Math.pow(Math.random(), 2) * maxR * 0.17,
+        ang:  Math.random() * Math.PI * 2,
+        b:    0.85 + Math.random() * 0.5,
+        rank: Math.random()
+      });
+    }
+  }
+
+  /* =========================================================
+     DRAWING HELPERS
+     ========================================================= */
+  function clear() {
+    for (var r = 0; r < rows; r++) {
+      var row = grid[r];
+      for (var c = 0; c < cols; c++) row[c] = ' ';
+    }
+  }
+
+  // Plot a glyph, but never paint over something already drawn
+  // unless `force` is set (planets/computer paint over rings).
+  function plot(x, y, ch, force) {
+    var xi = Math.round(x), yi = Math.round(y);
+    if (xi < 0 || xi >= cols || yi < 0 || yi >= rows) return;
+    // Hold the starfield out of the haloed silhouettes of the
+    // computer and the name — the galaxy flows around both.
+    if (excludeMask[yi * cols + xi]) return;
+    if (!force && grid[yi][xi] !== ' ') return;
+    grid[yi][xi] = ch;
+  }
+
+  function drawStars(t) {
+    var spin = t * SKY_SPIN;
+    for (var i = 0; i < STARS.length; i++) {
+      var s = STARS[i];
+      if (s.rank >= galaxyFade) continue;       // dissolved out
+      var a = s.ang + spin;
+      var x = cx + s.rad * aspect * Math.cos(a);
+      var y = cy + s.rad * Math.sin(a);
+      var ch;
+      if (s.b < 0.55) {
+        ch = '.';
+      } else if (s.b < 0.85) {
+        ch = '·';
+      } else {
+        // Brightest stars twinkle through a little cycle.
+        var tw = Math.sin(t * 2.2 + s.tw);
+        ch = tw > 0.6 ? '+' : (tw > -0.2 ? '*' : '·');
+      }
+      plot(x, y, ch, false);
+    }
+  }
+
+  function drawOrbitRing(rx, ry) {
+    var steps = Math.max(48, Math.round(rx * 3.5));
+    for (var k = 0; k < steps; k++) {
+      var a = (k / steps) * Math.PI * 2;
+      plot(cx + rx * Math.cos(a), cy + ry * Math.sin(a), '·', false);
+    }
+  }
+
+  // Dim a planet glyph when it's on the far side of its orbit.
+  function dim(g) {
+    return g === 'o' ? '·' : 'o';
+  }
+
+  function drawSystem(t) {
+    var planets = [];
+
+    for (var i = 0; i < ORBITS.length; i++) {
+      var o = ORBITS[i];
+      if (o.rank >= galaxyFade) continue;       // dissolved out
+      var rx = o.rf * cols;
+      var ry = rx * FLATTEN / aspect;
+      drawOrbitRing(rx, ry);
+
+      var ang = o.phase + o.spd * t;
+      var px = cx + rx * Math.cos(ang);
+      var py = cy + ry * Math.sin(ang);
+      var behind = Math.sin(ang) < 0;          // top half = far side
+      planets.push({ x: px, y: py, g: behind ? dim(o.glyph) : o.glyph });
+
+      // A planet's moon rides a small orbit around the planet itself.
+      if (o.moon) {
+        var ma = o.moon.phase + o.moon.spd * t;
+        planets.push({
+          x: px + o.moon.r * aspect * Math.cos(ma),
+          y: py + o.moon.r * 0.5 * Math.sin(ma),
+          g: '.'
+        });
+      }
+    }
+
+    // Painter's algorithm: far things first, near things last.
+    planets.sort(function (a, b) { return a.y - b.y; });
+    for (var p = 0; p < planets.length; p++) {
+      plot(planets[p].x, planets[p].y, planets[p].g, true);
+    }
+  }
+
+  // Map a particle's brightness to a glyph — denser ink for brighter.
+  function galGlyph(b) {
+    if (b > 1.05) return '@';
+    if (b > 0.85) return '#';
+    if (b > 0.62) return '*';
+    if (b > 0.42) return '+';
+    if (b > 0.24) return '·';
+    return '.';
+  }
+
+  function drawGalaxy(t) {
+    var rot = t * GAL_SPIN;
+    for (var i = 0; i < GALAXY.length; i++) {
+      var p = GALAXY[i];
+      if (p.rank >= galaxyFade) continue;       // dissolved out
+      var a = p.ang + rot;
+      var x = cx + p.rad * Math.cos(a);
+      var y = cy + p.rad * GAL_FLATTEN * Math.sin(a);
+      plot(x, y, galGlyph(p.b), true);
+    }
+    // The core's vertical light-spike — fades out above and below.
+    var spike = Math.round(rows * 0.34);
+    for (var d = -spike; d <= spike; d++) {
+      var inten = 1 - Math.abs(d) / spike;
+      if (inten * galaxyFade < 0.14) continue;  // shrinks as it fades
+      plot(cx, cy + d, inten > 0.6 ? '|' : (inten > 0.32 ? ':' : '.'), true);
+    }
+  }
+
+  /* ---- centrepiece renderer ----------------------------------
+     The computer is drawn into the galaxy's character grid as a
+     depth-buffered 3D model. The name is a separate crisp HTML
+     overlay — but the galaxy is still held out of its letterform
+     silhouette. Grid-sized buffers, allocated per resize:
+       compZ / compChar — computer depth render
+       nameMaskRaw      — dilated silhouette of the name overlay
+       excludeMask      — name mask + dilated computer silhouette  */
+  var compZ, compChar, COMP_S;
+  var nameMaskRaw, excludeMask;
+  var cpBanner = document.getElementById('cpBanner');
+  var cpCorner = document.getElementById('cpCorner');
+  // The computer's bounding box in grid cells — refreshed each frame
+  // by drawComputer3D, used for the hover hit-test.
+  var compMinC = 0, compMaxC = -1, compMinR = 0, compMaxR = -1;
+
+  // How much of the viewport the computer fills — its height as a
+  // fraction of the grid. Driven live by the HUD's Size slider.
+  var sizeFrac = 0.28;
+
+  // Allocate every grid-sized buffer, then fit both the computer and
+  // the name to the viewport. Called from measure() on each resize.
+  function setupScene() {
+    var n = cols * rows;
+    compZ       = new Float64Array(n);
+    compChar    = new Array(n);
+    nameMaskRaw = new Uint8Array(n);
+    excludeMask = new Uint8Array(n);
+    fitComputer();
+  }
+
+  // Render the name into the overlay and size it so the full
+  // lettering spans `nameFrac` of the viewport width. The browser
+  // draws the block font crisply at whatever size this lands on.
+  function applyName() {
+    var txt = BANNER.join('\n');
+    cpBanner.textContent = txt;
+    cpBanner.style.fontSize =
+      (nameFrac * window.innerWidth / (NAME_W * 0.6)).toFixed(2) + 'px';
+    // The corner copy — same lettering, small, parked top-left.
+    cpCorner.textContent = txt;
+    cpCorner.style.fontSize =
+      (NAME_CORNER_FRAC * window.innerWidth / (NAME_W * 0.6)).toFixed(2) + 'px';
+  }
+
+  // Translate the overlay's letterforms into galaxy cells: for every
+  // non-space glyph, mark the grid cells it covers, then dilate by a
+  // small margin. The galaxy is held out of this mask — so the
+  // starfield haloes the name's real outline, not a rectangle.
+  function computeNameMask() {
+    var n = cols * rows, i;
+    for (i = 0; i < n; i++) nameMaskRaw[i] = 0;
+    if (!charW || !charH) return;
+    // #sky is centred via CSS transform, so its origin is exact.
+    var skyLeft = (window.innerWidth  - cols * charW) / 2;
+    var skyTop  = (window.innerHeight - rows * charH) / 2;
+    var bR = cpBanner.getBoundingClientRect();
+    if (!bR.width || !bR.height) return;
+    var ovW = bR.width  / NAME_W;          // overlay cell size, px
+    var ovH = bR.height / NAME_H;
+    var raw = [];
+    for (var br = 0; br < NAME_H; br++) {
+      var line = BANNER[br];
+      for (var bc = 0; bc < line.length; bc++) {
+        if (line.charAt(bc) === ' ') continue;
+        var gx = bR.left + bc * ovW, gy = bR.top + br * ovH;
+        var cA = Math.floor((gx        - skyLeft) / charW);
+        var cB = Math.floor((gx + ovW  - skyLeft) / charW);
+        var rA = Math.floor((gy        - skyTop ) / charH);
+        var rB = Math.floor((gy + ovH  - skyTop ) / charH);
+        for (var rr = rA; rr <= rB; rr++) {
+          for (var cc = cA; cc <= cB; cc++) {
+            if (rr >= 0 && rr < rows && cc >= 0 && cc < cols) {
+              raw.push(rr * cols + cc);
+            }
+          }
+        }
+      }
+    }
+    // Dilate each marked cell by the halo margin.
+    for (var k = 0; k < raw.length; k++) {
+      var idx = raw[k], r = (idx / cols) | 0, c = idx % cols;
+      var r0 = Math.max(0, r-HALO_Y), r1 = Math.min(rows-1, r+HALO_Y);
+      var c0 = Math.max(0, c-HALO_X), c1 = Math.min(cols-1, c+HALO_X);
+      for (var rr2 = r0; rr2 <= r1; rr2++) {
+        var base = rr2 * cols;
+        for (var cc2 = c0; cc2 <= c1; cc2++) nameMaskRaw[base + cc2] = 1;
+      }
+    }
+  }
+
+  // Scale the model to the viewport at the current sizeFrac, then
+  // re-sample its faces. Bounded by both height and width so it
+  // never spills off-screen.
+  function fitComputer() {
+    var vScale = charW / charH;            // vertical squash for tall cells
+    var sH = sizeFrac * rows * CAM_Z / (vScale * MODEL_H);
+    var sW = sizeFrac * 1.23 * cols * CAM_Z / MODEL_SPAN;
+    COMP_S = Math.min(sH, sW);
+    buildSamples();
+  }
+
+  // Point-sample every face. Pitch derives from COMP_S so projected
+  // points land under a cell apart — dense enough to fill solidly.
+  function buildSamples() {
+    // Sample for the largest size the computer reaches (on hover),
+    // so the surface never goes sparse as it enlarges.
+    var step = 0.7 * CAM_Z / (COMP_S * HOVER_MAX);
+    if (step < 0.014) step = 0.014;
+    if (step > 0.05)  step = 0.05;
+    for (var f = 0; f < FACES.length; f++) {
+      var face = FACES[f], u = face.u, v = face.v, o = face.o;
+      var lu = Math.sqrt(u[0]*u[0]+u[1]*u[1]+u[2]*u[2]);
+      var lv = Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+      var ns = Math.max(2, Math.ceil(lu / step));
+      var nt = Math.max(2, Math.ceil(lv / step));
+      var pts = [], ranks = [];
+      for (var i = 0; i < ns; i++) {
+        var s = i / (ns - 1);
+        for (var j = 0; j < nt; j++) {
+          var t = j / (nt - 1);
+          pts.push(
+            o[0] + s*u[0] + t*v[0],
+            o[1] + s*u[1] + t*v[1],
+            o[2] + s*u[2] + t*v[2]
+          );
+          ranks.push(Math.random());      // entrance reveal order
+        }
+      }
+      face.pts = pts;
+      face.ranks = ranks;
+    }
+  }
+
+  // Render the computer into compChar/compZ at yaw `yaw` (rotation
+  // about the vertical axis) and pitch `pitch` (downward tilt).
+  function drawComputer3D(yaw, pitch) {
+    var n = cols * rows, i;
+    for (i = 0; i < n; i++) compZ[i] = 0;
+    compMinC = cols; compMaxC = -1; compMinR = rows; compMaxR = -1;
+
+    var cyR = Math.cos(yaw), syR = Math.sin(yaw);
+    var ct  = Math.cos(pitch), st = Math.sin(pitch);
+    var vScale = charW / charH;
+    var S = COMP_S * hoverScale;             // current (eased) scale
+
+    for (var f = 0; f < FACES.length; f++) {
+      var face = FACES[f], nrm = face.n;
+
+      // Rotate the normal the same way as the points below.
+      var nx = nrm[0], ny = nrm[1], nz = nrm[2];
+      var rx  =  nx*cyR + nz*syR;
+      var rz  = -nx*syR + nz*cyR;
+      var rny =  ny*ct - rz*st;
+      var rnz =  ny*st + rz*ct;
+      if (rnz <= 0) continue;                  // back-face cull
+
+      // Flat Lambert shade → one glyph per face. A face with a fixed
+      // glyph (the screen) skips shading and stays dark.
+      var glyph;
+      if (face.glyph) {
+        glyph = face.glyph;
+      } else {
+        var ndl = rx*LX + rny*LY + rnz*LZ;
+        if (ndl < 0) ndl = 0;
+        var lum = (AMBIENT + (1 - AMBIENT) * ndl) * face.albedo;
+        var gi = Math.round(lum * (RAMP.length - 1));
+        if (gi < 3) gi = 3; else if (gi > RAMP.length - 1) gi = RAMP.length - 1;
+        glyph = RAMP.charAt(gi);
+      }
+
+      // Splat the face's sample points through the depth buffer.
+      // Points reveal in rank order during the entrance.
+      var p = face.pts, rk = face.ranks, m = p.length, pi = 0;
+      for (i = 0; i < m; i += 3, pi++) {
+        if (rk[pi] >= compReveal) continue;
+        var x = p[i], y = p[i+1], z = p[i+2];
+        var x1 =  x*cyR + z*syR;               // spin about Y
+        var z1 = -x*syR + z*cyR;
+        var y1 =  y*ct - z1*st;                // tilt about X
+        var z2 =  y*st + z1*ct;
+        var depth = CAM_Z - z2;
+        if (depth <= 0.1) continue;
+        var inv = 1 / depth;
+        var col = Math.round(cx + S * x1 * inv);
+        var row = Math.round(cy - S * vScale * y1 * inv);
+        if (col < 0 || col >= cols || row < 0 || row >= rows) continue;
+        if (col < compMinC) compMinC = col;
+        if (col > compMaxC) compMaxC = col;
+        if (row < compMinR) compMinR = row;
+        if (row > compMaxR) compMaxR = row;
+        var idx = row * cols + col;
+        if (inv > compZ[idx]) { compZ[idx] = inv; compChar[idx] = glyph; }
+      }
+    }
+  }
+
+  // The galaxy's halo margin, in cells, around both silhouettes.
+  var HALO_X = 3, HALO_Y = 2;
+
+  // Each frame, rebuild the exclude mask: start from the name's
+  // (static) halo, then add the dilated computer silhouette.
+  function buildExcludeMask() {
+    // While engaged the name fades out — release its halo too, so
+    // the galaxy fills back in where the name was.
+    if (engaged) excludeMask.fill(0);
+    else         excludeMask.set(nameMaskRaw);
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        if (compZ[r * cols + c] <= 0) continue;
+        var r0 = Math.max(0, r-HALO_Y), r1 = Math.min(rows-1, r+HALO_Y);
+        var c0 = Math.max(0, c-HALO_X), c1 = Math.min(cols-1, c+HALO_X);
+        for (var rr = r0; rr <= r1; rr++) {
+          var base = rr * cols;
+          for (var cc = c0; cc <= c1; cc++) excludeMask[base + cc] = 1;
+        }
+      }
+    }
+  }
+
+  // The screen message. While 'idle' a static "Turn On" shows once
+  // the computer is woken; clicking flies it off (see startBoot).
+  var SCREEN_MSG    = 'Turn On';
+  var SCREEN_MSG_AT = 1.3;                  // show once hoverScale passes this
+  var SCR_CENTER    = [0, 0.175, 0.57];     // centre of the screen face
+
+  // Project the message characters to grid cells at the current
+  // transform. Returns [{ch,col,row}], or null if the screen is hidden.
+  function screenMsgCells() {
+    var cyR = Math.cos(curYaw), syR = Math.sin(curYaw);
+    var ct  = Math.cos(curPitch), st = Math.sin(curPitch);
+    var S = COMP_S * hoverScale, vScale = charW / charH;
+    var x = SCR_CENTER[0], y = SCR_CENTER[1], z = SCR_CENTER[2];
+    var x1 =  x*cyR + z*syR;
+    var z1 = -x*syR + z*cyR;
+    var y1 =  y*ct - z1*st;
+    var z2 =  y*st + z1*ct;
+    var depth = CAM_Z - z2;
+    if (depth <= 0.1) return null;
+    var inv = 1 / depth;
+    var ccol = Math.round(cx + S * x1 * inv);
+    var crow = Math.round(cy - S * vScale * y1 * inv);
+    var half = (SCREEN_MSG.length - 1) / 2, out = [];
+    for (var k = 0; k < SCREEN_MSG.length; k++) {
+      var ch = SCREEN_MSG.charAt(k);
+      if (ch === ' ') continue;
+      out.push({ ch: ch, col: ccol + Math.round(k - half), row: crow });
+    }
+    return out;
+  }
+
+  // Stamp the static screen message into the grid. Only while idle —
+  // during 'flyoff' the characters are coloured DOM spans instead.
+  function drawScreenText() {
+    if (osPhase !== 'idle' || hoverScale < SCREEN_MSG_AT) return;
+    var cells = screenMsgCells();
+    if (!cells) return;
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i];
+      if (c.col >= 0 && c.col < cols && c.row >= 0 && c.row < rows) {
+        grid[c.row][c.col] = c.ch;
+      }
+    }
+  }
+
+  // Click the woken computer → fling the message off the screen,
+  // character by character, in discrete tetris-like cell steps. Each
+  // character becomes a coloured DOM <span> that cycles the rainbow.
+  function startBoot() {
+    var cells = screenMsgCells();
+    if (!cells || !cells.length) return;
+    bootChars = [];
+    bootSpans = [];
+    bootStep  = 0;
+    var m = cells.length;
+    for (var i = 0; i < m; i++) {
+      var f = m > 1 ? (i / (m - 1)) * 2 - 1 : 0;   // -1 (left) … 1 (right)
+      bootChars.push({
+        ch:  cells[i].ch,
+        col: cells[i].col, row: cells[i].row,
+        vx:  Math.round(f * 3),       // fan outward
+        vy:  -(2 + (i % 3))           // rise, at staggered rates
+      });
+      var sp = document.createElement('span');
+      sp.textContent = cells[i].ch;
+      sp.style.cssText =
+        'position:fixed;white-space:pre;pointer-events:none;' +
+        'z-index:8;font-family:inherit;line-height:1;';
+      document.body.appendChild(sp);
+      bootSpans.push(sp);
+    }
+    osPhase = 'flyoff';
+    bootNextStep = lastT + BOOT_STEP;
+    placeBootSpans();
+  }
+
+  // Position each flying character's span at its grid cell and colour
+  // it from the rainbow — offset per character and advanced every
+  // step, so the colours cycle on each move.
+  function placeBootSpans() {
+    var skyLeft = (window.innerWidth  - cols * charW) / 2;
+    var skyTop  = (window.innerHeight - rows * charH) / 2;
+    for (var i = 0; i < bootChars.length; i++) {
+      var c = bootChars[i], sp = bootSpans[i];
+      var on = c.col >= 0 && c.col < cols && c.row >= 0 && c.row < rows;
+      sp.style.display = on ? 'block' : 'none';
+      if (!on) continue;
+      sp.style.left     = (skyLeft + c.col * charW).toFixed(1) + 'px';
+      sp.style.top      = (skyTop  + c.row * charH).toFixed(1) + 'px';
+      sp.style.fontSize = charH.toFixed(1) + 'px';
+      sp.style.color    = RAINBOW[(bootStep + i) % RAINBOW.length];
+    }
+  }
+
+  // Discard every flying span — the message is gone.
+  function endBoot() {
+    for (var i = 0; i < bootSpans.length; i++) {
+      var sp = bootSpans[i];
+      if (sp.parentNode) sp.parentNode.removeChild(sp);
+    }
+    bootSpans = [];
+    bootChars = [];
+    osPhase = 'on';
+  }
+
+  // Launch the OS — a paper panel expands from the centre of the
+  // screen, then the MATTHEW_OS page (desktop/index.html) opens.
+  function launchOS() {
+    var panel = document.createElement('div');
+    panel.style.cssText =
+      'position:fixed;inset:0;background:#f4f1ea;z-index:20;' +
+      'transform:scale(0);transform-origin:center;' +
+      'transition:transform 620ms cubic-bezier(.65,0,.35,1);';
+    document.body.appendChild(panel);
+    // Two frames so the browser registers scale(0) before it animates.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { panel.style.transform = 'scale(1)'; });
+    });
+    setTimeout(function () { window.location.href = 'desktop/index.html'; }, 660);
+  }
+
+  // Advance the flying characters one discrete cell step at a time.
+  // Once every character has left the grid, the message is gone.
+  function stepBoot(t) {
+    while (t >= bootNextStep) {
+      var anyOnscreen = false;
+      for (var i = 0; i < bootChars.length; i++) {
+        var c = bootChars[i];
+        c.col += c.vx;
+        c.row += c.vy;
+        if (c.col >= 0 && c.col < cols && c.row >= 0 && c.row < rows) {
+          anyOnscreen = true;
+        }
+      }
+      bootStep++;                       // advance the rainbow cycle
+      bootNextStep += BOOT_STEP;
+      placeBootSpans();
+      if (!anyOnscreen) { endBoot(); break; }
+    }
+  }
+
+  function render(t) {
+    lastT = t;
+    // Engaged = the computer is the focus: hovered, or mid-boot.
+    engaged = hovering || osPhase !== 'idle';
+    // The galaxy dissolves in on load, back out once booting — a
+    // gentle ease in, a brisker ease out.
+    var galTarget = osPhase === 'idle' ? 1 : 0;
+    galaxyFade += (galTarget - galaxyFade) *
+                  (galTarget === 1 ? GAL_FADE_IN : GAL_FADE_OUT);
+    // Entrance: the galaxy, computer and name all dissolve in together.
+    compReveal += (1 - compReveal) * COMP_REVEAL_EASE;
+    // When the galaxy has faded, count down to the OS launch.
+    if (osPhase !== 'idle' && launchAt < 0 && galaxyFade < 0.04) {
+      launchAt = t + LAUNCH_DELAY;
+    }
+    if (launchAt >= 0 && !launched && t >= launchAt) {
+      launched = true;
+      launchOS();
+    }
+    // Track the cursor only while idle; freeze the angle once engaged.
+    if (osPhase === 'idle') {
+      curYaw   += (targetYaw   - curYaw)   * TRACK_EASE;
+      curPitch += (targetPitch - curPitch) * TRACK_EASE;
+    }
+    hoverScale += ((engaged ? HOVER_MAX : 1) - hoverScale) * HOVER_EASE;
+    // The centred name fades in lockstep with the galaxy and computer
+    // during the entrance (driven directly); afterwards the CSS
+    // transition takes over for the hover cross-fade.
+    if (compReveal < 0.99 && !engaged) {
+      cpBanner.style.transition = 'none';
+      cpBanner.style.opacity = compReveal.toFixed(3);
+    } else {
+      cpBanner.style.transition = '';
+      cpBanner.style.opacity = engaged ? '0' : '1';
+    }
+    cpCorner.style.opacity = engaged ? '1' : '0';   // corner name in
+    if (osPhase === 'flyoff') stepBoot(t);
+    drawComputer3D(curYaw, curPitch);
+    buildExcludeMask();
+
+    clear();
+    drawStars(t);
+    if (mode === 'galaxy') drawGalaxy(t);
+    else drawSystem(t);
+
+    for (var i = 0, n = cols * rows; i < n; i++) {
+      if (compZ[i] > 0) grid[(i / cols) | 0][i % cols] = compChar[i];
+    }
+    drawScreenText();
+
+    var out = '';
+    for (var r = 0; r < rows; r++) {
+      out += grid[r].join('') + (r < rows - 1 ? '\n' : '');
+    }
+    sky.textContent = out;
+  }
+
+  /* =========================================================
+     LOOP
+     ========================================================= */
+  var running = true;
+  var t0 = performance.now();
+  var lastPaint = 0;
+
+  function frame(now) {
+    if (!running) return;
+    // Throttle to ~32fps — calmer, and easy on the CPU.
+    if (now - lastPaint >= 31) {
+      render((now - t0) / 1000);
+      lastPaint = now;
+    }
+    requestAnimationFrame(frame);
+  }
+
+  function start() {
+    if (reduceMotion) {
+      // No entrance animation — show the settled scene at once.
+      galaxyFade = 1; compReveal = 1;
+      render(8);
+      return;
+    }
+    running = true;
+    requestAnimationFrame(frame);
+  }
+
+  /* =========================================================
+     WIRING
+     ========================================================= */
+  document.getElementById('mode').addEventListener('click', function (e) {
+    mode = mode === 'orrery' ? 'galaxy' : 'orrery';
+    e.target.textContent = 'Mode: ' + (mode === 'orrery' ? 'Orrery' : 'Galaxy');
+    if (reduceMotion || !running) render(8);
+  });
+
+  document.getElementById('spacing').addEventListener('click', function (e) {
+    spacing = spacing === 'wide' ? 'tight' : 'wide';
+    applySpacing();
+    e.target.textContent = 'Rings: ' + (spacing === 'wide' ? 'Wide' : 'Tight');
+    if (reduceMotion || !running) render(8);
+  });
+
+  document.getElementById('pause').addEventListener('click', function (e) {
+    if (reduceMotion) return;
+    running = !running;
+    e.target.textContent = running ? 'Pause' : 'Play';
+    if (running) requestAnimationFrame(frame);
+  });
+
+  document.getElementById('size').addEventListener('input', function (e) {
+    sizeFrac = parseFloat(e.target.value);
+    fitComputer();
+    if (reduceMotion || !running) render(8);
+  });
+
+  document.getElementById('namesize').addEventListener('input', function (e) {
+    nameFrac = parseFloat(e.target.value);
+    applyName();
+    computeNameMask();
+    if (reduceMotion || !running) render(8);
+  });
+
+  // The computer tilts to follow the cursor — the actual easing
+  // toward this target happens each frame in render().
+  window.addEventListener('pointermove', function (e) {
+    if (reduceMotion) return;
+    var nx = (e.clientX / window.innerWidth)  * 2 - 1;
+    var ny = (e.clientY / window.innerHeight) * 2 - 1;
+    if (nx < -1) nx = -1; else if (nx > 1) nx = 1;
+    if (ny < -1) ny = -1; else if (ny > 1) ny = 1;
+    targetYaw   = COMP_REST_ANGLE + nx * YAW_RANGE;
+    targetPitch = DEFAULT_TILT    + ny * PITCH_RANGE;
+
+    // Hover test — is the cursor inside the computer's bounding box?
+    if (charW && charH) {
+      var skyLeft = (window.innerWidth  - cols * charW) / 2;
+      var skyTop  = (window.innerHeight - rows * charH) / 2;
+      var cc = Math.floor((e.clientX - skyLeft) / charW);
+      var rr = Math.floor((e.clientY - skyTop ) / charH);
+      hovering = (compMaxC >= 0 &&
+                  cc >= compMinC && cc <= compMaxC &&
+                  rr >= compMinR && rr <= compMaxR);
+    }
+  });
+
+  // Cursor left the page — drop the hover so it eases back down.
+  document.addEventListener('mouseleave', function () {
+    hovering = false;
+  });
+
+  // Press on the computer to fling the "Turn On" message off the
+  // screen. Hit-tests the pointer against the computer's bounding
+  // box directly (a couple of cells of slack), so it never depends
+  // on a stale hover flag.
+  window.addEventListener('pointerdown', function (e) {
+    if (reduceMotion || osPhase !== 'idle') return;
+    if (compReveal < 0.3) return;             // clickable once it's visible
+    if (!charW || !charH || compMaxC < 0) return;
+    var skyLeft = (window.innerWidth  - cols * charW) / 2;
+    var skyTop  = (window.innerHeight - rows * charH) / 2;
+    var cc = Math.floor((e.clientX - skyLeft) / charW);
+    var rr = Math.floor((e.clientY - skyTop ) / charH);
+    if (cc >= compMinC - 2 && cc <= compMaxC + 2 &&
+        rr >= compMinR - 1 && rr <= compMaxR + 1) {
+      startBoot();
+    }
+  });
+
+  var resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      measure();
+      applyName();
+      computeNameMask();
+      if (reduceMotion || !running) render(8);
+    }, 140);
+  });
+
+  measure();
+  applyName();
+  computeNameMask();
+  start();
+})();
+</script>
 </body>
 </html>

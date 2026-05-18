@@ -1,0 +1,749 @@
+/* =========================================================
+   STYLE.CSS — MATTHEW_OS (Desktop OS concept)
+
+   A standalone, self-contained build. It shares the design
+   language of the main site (paper + ink, DM Serif / EB
+   Garamond / JetBrains Mono) but nothing here touches the
+   original files — delete this folder and the site is exactly
+   as it was.
+
+   Sections:
+     1. Design tokens
+     2. Reset & base
+     3. Boot stage (powered-off computer)
+     4. The CSS-drawn computer
+     5. The CRT screen + zoom transition
+     6. Boot log
+     7. Desktop + menu bar
+     8. Desktop icons
+     9. Windows (draggable Mac windows)
+    10. Window content styles
+    11. Sidekick
+    12. Responsive / mobile
+   ========================================================= */
+
+/* =========================================================
+   1. DESIGN TOKENS  (copied from the main site so this build
+      is portable — it carries its own tokens.)
+   ========================================================= */
+:root {
+  --ink: #0a0a0a;
+  --paper: #f4f1ea;
+  --paper-edge: #e6e0d0;
+  --shell: #d8d2c0;          /* warm beige computer body          */
+  --shell-dark: #b8b19a;     /* shaded shell edges                */
+  --screen-off: #0c0b08;     /* CRT when powered down             */
+  --screen-on: #15140f;      /* CRT phosphor-dark when lit        */
+
+  --serif-display: 'DM Serif Display', Georgia, serif;
+  --serif-body: 'EB Garamond', Georgia, serif;
+  --mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* System mono for box-drawing glyphs (Google's JetBrains subset
+     drops some of them — see the main site's note). */
+  --mono-sys: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-base: 1.0625rem;
+  --fs-lg: 1.375rem;
+  --fs-xl: 2rem;
+  --fs-2xl: 3rem;
+
+  --space-2xs: 0.375rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+
+  /* Zoom transition timing — reused by JS so the reveal lines up. */
+  --zoom-ms: 780ms;
+  --zoom-ease: cubic-bezier(0.55, 0, 0.3, 1);
+}
+
+/* =========================================================
+   2. RESET & BASE
+   ========================================================= */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--serif-body);
+  font-size: var(--fs-base);
+  line-height: 1.5;
+  /* Subtle paper grain, same as the main site. */
+  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+  overflow: hidden;        /* the OS owns the whole viewport */
+}
+
+.mono {
+  font-family: var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   3. BOOT STAGE — the powered-off computer, centered
+   ========================================================= */
+.boot-stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  transition: opacity 420ms ease;
+}
+/* Once the screen zoom begins the stage fades away entirely. */
+body.os-zooming .boot-stage,
+body.os-desktop .boot-stage { opacity: 0; pointer-events: none; }
+
+.stage-caption {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.22em;
+  opacity: 0.55;
+}
+body.os-on .stage-caption { opacity: 0; transition: opacity 300ms ease; }
+
+/* Crop marks — corners of the "plate". */
+.crop { position: fixed; width: 26px; height: 26px; pointer-events: none; }
+.crop::before, .crop::after { content: ''; position: absolute; background: var(--ink); }
+.crop.tl { top: 22px; left: 22px; }
+.crop.tl::before { top: 0; left: 0; width: 1px; height: 26px; }
+.crop.tl::after  { top: 0; left: 0; width: 26px; height: 1px; }
+.crop.tr { top: 22px; right: 22px; }
+.crop.tr::before { top: 0; right: 0; width: 1px; height: 26px; }
+.crop.tr::after  { top: 0; right: 0; width: 26px; height: 1px; }
+.crop.bl { bottom: 22px; left: 22px; }
+.crop.bl::before { bottom: 0; left: 0; width: 1px; height: 26px; }
+.crop.bl::after  { bottom: 0; left: 0; width: 26px; height: 1px; }
+.crop.br { bottom: 22px; right: 22px; }
+.crop.br::before { bottom: 0; right: 0; width: 1px; height: 26px; }
+.crop.br::after  { bottom: 0; right: 0; width: 26px; height: 1px; }
+
+/* =========================================================
+   4. THE COMPUTER  (drawn entirely in CSS)
+   A compact all-in-one machine: screen recess in a beige
+   shell, a little keyboard below, a power button at the side.
+   ========================================================= */
+.computer {
+  position: relative;
+  width: clamp(280px, 46vw, 460px);
+}
+
+.computer__shell {
+  background:
+    linear-gradient(160deg, #e2dccb 0%, var(--shell) 38%, var(--shell-dark) 100%);
+  border: 2px solid var(--ink);
+  border-radius: 18px 18px 12px 12px;
+  padding: 22px 22px 14px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4),
+              6px 8px 0 rgba(10,10,10,0.18);
+}
+
+/* The screen recess — a dark inset the CRT element covers exactly. */
+.computer__screen-slot {
+  aspect-ratio: 4 / 3;
+  background: var(--screen-off);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: inset 0 0 22px rgba(0,0,0,0.9);
+}
+
+/* Face below the screen — brand plate + a fake floppy drive slot. */
+.computer__face {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding: 0 4px;
+}
+.computer__brand {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: #5b5747;
+}
+.computer__drive {
+  width: 64px;
+  height: 7px;
+  background: var(--shell-dark);
+  border: 1px solid rgba(10,10,10,0.5);
+  border-radius: 2px;
+}
+
+/* Keyboard — three rows of keys drawn as repeating gradients. */
+.computer__keyboard {
+  width: 86%;
+  margin: 10px auto 0;
+  background: linear-gradient(180deg, var(--shell) 0%, var(--shell-dark) 100%);
+  border: 2px solid var(--ink);
+  border-radius: 4px 4px 7px 7px;
+  padding: 7px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 4px 5px 0 rgba(10,10,10,0.15);
+}
+.key-row {
+  height: 9px;
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    to right, var(--ink) 0 1px, transparent 1px 13px
+  );
+  opacity: 0.55;
+}
+.key-row--space {
+  background-image: repeating-linear-gradient(
+    to right, var(--ink) 0 1px, transparent 1px 80%
+  );
+}
+
+/* Power button — pulses gently until clicked. */
+.power-btn {
+  position: absolute;
+  right: -14px;
+  bottom: 92px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: var(--shell);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  padding: 9px 8px;
+  box-shadow: 3px 3px 0 rgba(10,10,10,0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.power-btn:hover { transform: translate(-1px, -1px); }
+.power-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 rgba(0,0,0,0); }
+.power-btn__glyph {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  position: relative;
+  animation: power-pulse 1.8s ease-in-out infinite;
+}
+.power-btn__glyph::before {       /* the tick through the circle */
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 8px;
+  background: var(--ink);
+}
+.power-btn__label { font-size: 0.5rem; letter-spacing: 0.18em; }
+@keyframes power-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(10,10,10,0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(10,10,10,0); }
+}
+/* Once powered on, the button is done. */
+body.os-on .power-btn { opacity: 0; pointer-events: none; transition: opacity 250ms ease; }
+
+/* =========================================================
+   5. THE CRT SCREEN + ZOOM TRANSITION
+   Fixed element. JS docks it over #screenSlot (small), then
+   adds .crt--full to animate it to the whole viewport.
+   ========================================================= */
+.crt {
+  position: fixed;
+  top: 0; left: 0;
+  width: 320px; height: 240px;    /* JS overrides before paint */
+  background: var(--screen-off);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 50;
+  opacity: 0;                     /* hidden until power-on     */
+  pointer-events: none;
+  transition:
+    top    var(--zoom-ms) var(--zoom-ease),
+    left   var(--zoom-ms) var(--zoom-ease),
+    width  var(--zoom-ms) var(--zoom-ease),
+    height var(--zoom-ms) var(--zoom-ease),
+    border-radius var(--zoom-ms) var(--zoom-ease);
+}
+/* Powered on: the screen lights up. */
+body.os-on .crt {
+  opacity: 1;
+  pointer-events: auto;
+  background: var(--screen-on);
+  animation: crt-flash 280ms ease-out;
+}
+@keyframes crt-flash {
+  0%   { filter: brightness(2.6) contrast(0.4); }
+  100% { filter: brightness(1) contrast(1); }
+}
+/* Zoomed: fills the viewport. JS sets the geometry; this just
+   drops the rounding so it reads as a full screen. */
+.crt--full { border-radius: 0; }
+
+/* Scanline + vignette overlay — present while booting, faded
+   once the desktop is up so content stays crisp. */
+.crt__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.55) 100%),
+    repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px);
+  transition: opacity 500ms ease;
+}
+body.os-desktop .crt__overlay { opacity: 0.14; }
+
+/* =========================================================
+   6. BOOT LOG
+   ========================================================= */
+.boot-log {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  margin: 0;
+  padding: clamp(0.75rem, 3vw, 2.4rem);
+  font-family: var(--mono-sys);
+  font-size: clamp(0.6rem, 1.5vw, 0.95rem);
+  line-height: 1.7;
+  color: var(--paper);
+  white-space: pre-wrap;
+  text-shadow: 0 0 6px rgba(244,241,234,0.35);
+}
+.boot-log .boot-ok  { opacity: 0.6; }
+.boot-log .boot-hi  { font-weight: 700; }
+.boot-log .caret {
+  display: inline-block;
+  width: 0.6em; height: 1.05em;
+  margin-left: 1px;
+  background: var(--paper);
+  vertical-align: -0.18em;
+  animation: caret-blink 1s steps(1, end) infinite;
+}
+@keyframes caret-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
+/* The log clears once the desktop is shown. */
+body.os-desktop .boot-log { display: none; }
+
+/* =========================================================
+   7. DESKTOP + MENU BAR
+   ========================================================= */
+.desktop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0;
+}
+.desktop[hidden] { display: none; }
+body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
+
+.menubar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  height: 30px;
+  padding: 0 var(--space-sm);
+  background: var(--ink);
+  color: var(--paper);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  border-bottom: 2px solid var(--ink);
+  user-select: none;
+}
+.menubar__brand { display: flex; align-items: center; gap: 0.5em; font-weight: 700; }
+.menubar__mark {
+  width: 11px; height: 11px;
+  background: var(--paper);
+  /* a small "bitten" square — nods to a certain fruit, kept abstract */
+  clip-path: polygon(0 0, 70% 0, 70% 30%, 100% 30%, 100% 100%, 0 100%);
+}
+.menubar__nav { display: flex; gap: 0.4em; }
+.menubar__nav button {
+  background: none;
+  border: 0;
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 2px;
+}
+.menubar__nav button:hover { background: var(--paper); color: var(--ink); }
+.menubar__clock { margin-left: auto; font-variant-numeric: tabular-nums; }
+
+.desk {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+/* =========================================================
+   8. DESKTOP ICONS
+   ========================================================= */
+.desk__icons {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;        /* icons re-enable it individually */
+}
+.desk-icon {
+  position: absolute;
+  pointer-events: auto;
+  width: 88px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  text-align: center;
+}
+.desk-icon:hover { border-color: rgba(10,10,10,0.25); }
+.desk-icon:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.desk-icon.is-open .desk-icon__art,
+.desk-icon.is-selected .desk-icon__art { background: var(--ink); }
+.desk-icon.is-open .desk-icon__art svg,
+.desk-icon.is-selected .desk-icon__art svg { stroke: var(--paper); }
+.desk-icon.is-open .desk-icon__label,
+.desk-icon.is-selected .desk-icon__label {
+  background: var(--ink); color: var(--paper);
+}
+.desk-icon__art {
+  width: 46px; height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
+.desk-icon__art svg {
+  width: 100%; height: 100%;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6;
+}
+.desk-icon__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 4px;
+  line-height: 1.3;
+}
+
+/* =========================================================
+   9. WINDOWS  (draggable Mac windows, System-style)
+   ========================================================= */
+.win {
+  position: absolute;
+  width: min(440px, 86vw);
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  box-shadow: 5px 6px 0 rgba(10,10,10,0.28);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100% - 24px);
+  animation: win-open 160ms ease-out;
+}
+@keyframes win-open {
+  from { transform: scale(0.96); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+.win.is-front { box-shadow: 7px 8px 0 rgba(10,10,10,0.38); }
+.win.is-closing { animation: win-close 130ms ease-in forwards; }
+@keyframes win-close {
+  to { transform: scale(0.95); opacity: 0; }
+}
+
+.win__bar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  position: relative;
+  min-height: 24px;
+  padding: 4px 8px;
+  cursor: grab;
+  border-bottom: 1.5px solid var(--ink);
+  /* Classic pinstripe titlebar. */
+  background-image: repeating-linear-gradient(
+    to bottom, var(--ink) 0 1px, var(--paper) 1px 3px
+  );
+}
+.win__bar:active { cursor: grabbing; }
+/* The non-focused window gets a plain (un-striped) bar, like System 6. */
+.win:not(.is-front) .win__bar { background-image: none; background: var(--paper); }
+
+.win__close {
+  width: 13px; height: 13px;
+  border: 1.5px solid var(--ink);
+  background: var(--paper);
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+.win__close:hover { background: var(--ink); }
+.win__title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 8px;
+  font-family: var(--mono);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.win:not(.is-front) .win__title { opacity: 0.5; }
+
+.win__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+/* =========================================================
+   10. WINDOW CONTENT STYLES
+   ========================================================= */
+.win__body h3 {
+  font-family: var(--serif-display);
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  line-height: 1;
+  margin-bottom: var(--space-2xs);
+}
+.win__body h4 {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin: var(--space-md) 0 var(--space-2xs);
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--ink);
+}
+.win__body p { margin-bottom: 0.8em; }
+.win__body p:last-child { margin-bottom: 0; }
+.win__body em { font-style: italic; }
+.win__body .lead {
+  font-family: var(--serif-display);
+  font-size: var(--fs-lg);
+  line-height: 1.25;
+  margin-bottom: var(--space-sm);
+}
+.win__body a { text-underline-offset: 3px; }
+
+/* Stat list (About). */
+.os-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2xs) var(--space-sm);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--ink);
+  padding-top: var(--space-sm);
+}
+.os-stats dt { font-weight: 700; }
+
+/* Resume entries. */
+.os-job { margin-bottom: var(--space-sm); }
+.os-job .os-job__head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  align-items: baseline;
+}
+.os-job .os-job__role {
+  font-family: var(--serif-display);
+  font-size: var(--fs-lg);
+}
+.os-job .os-job__date {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.12em;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+.os-job .os-job__where {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  margin-bottom: 0.3em;
+}
+
+/* Portfolio mini-cards. */
+.os-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-sm);
+}
+.os-card {
+  border: 1px solid var(--ink);
+  text-decoration: none;
+  color: var(--ink);
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+.os-card:hover { transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--ink); }
+.os-card__swatch { aspect-ratio: 5 / 3; border-bottom: 1px solid var(--ink); }
+.sw-lines  { background-image: repeating-linear-gradient(to bottom, var(--ink) 0 2px, transparent 2px 7px); }
+.sw-cross  { background-image:
+  repeating-linear-gradient(45deg, var(--ink) 0 2px, transparent 2px 9px),
+  repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 9px); }
+.sw-grad   { background: linear-gradient(to bottom, var(--paper), var(--ink)); }
+.sw-solid  { background: var(--ink); }
+.os-card__body { padding: var(--space-2xs) var(--space-xs) var(--space-xs); }
+.os-card__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  opacity: 0.7;
+}
+.os-card__title {
+  font-family: var(--serif-display);
+  font-size: var(--fs-base);
+  line-height: 1.1;
+  margin-top: 2px;
+}
+
+/* Blog directory listing. */
+.os-dir { list-style: none; }
+.os-dir li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xs);
+  align-items: baseline;
+  padding: var(--space-2xs) 0;
+  border-bottom: 1px dashed var(--ink);
+}
+.os-dir .os-dir__title {
+  font-family: var(--serif-body);
+  font-size: var(--fs-base);
+  text-decoration: none;
+}
+.os-dir .os-dir__title:hover { font-style: italic; }
+.os-dir .os-dir__meta {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+/* Socials list. */
+.os-links { list-style: none; }
+.os-links li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-2xs) 0;
+  border-bottom: 1px solid var(--ink);
+}
+.os-links .os-links__label {
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.16em;
+}
+.os-links a { text-decoration: none; }
+.os-links a:hover { font-style: italic; }
+
+.win__signature {
+  font-family: var(--serif-display);
+  font-size: var(--fs-lg);
+  margin-top: var(--space-sm);
+}
+
+/* =========================================================
+   11. SIDEKICK — wandering pixel bunny
+   ========================================================= */
+.sidekick {
+  position: absolute;
+  left: 0; top: 0;
+  width: 74px;
+  height: auto;
+  fill: var(--ink);
+  z-index: 5;
+  pointer-events: none;
+  /* JS moves it by setting --sk-x / --sk-y to desk coordinates;
+     the slow transition turns each jump into a stroll. --sk-face
+     flips it to face the direction of travel. */
+  transform: translate(var(--sk-x, 0px), var(--sk-y, 0px)) scaleX(var(--sk-face, 1));
+  transition: transform 3.4s ease-in-out;
+}
+.sidekick .sk-arm-a { animation: sk-wag 1.2s linear infinite; }
+.sidekick .sk-arm-b { animation: sk-wag 1.2s linear infinite; animation-delay: -0.6s; }
+.sidekick .sk-eyes  { opacity: 0; animation: sk-blink 4.5s steps(1, end) infinite; }
+@keyframes sk-wag   { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes sk-blink { 0%, 95%, 100% { opacity: 0; } 96%, 99% { opacity: 1; } }
+
+/* =========================================================
+   12. RESPONSIVE / MOBILE
+   On phones, windows can't be dragged comfortably — they open
+   as one centered, near-full panel. Icons become a grid.
+   ========================================================= */
+@media (max-width: 700px) {
+  .computer { width: min(86vw, 360px); }
+  .power-btn { bottom: 70px; }
+
+  .menubar__nav { display: none; }   /* folders carry navigation here */
+
+  /* Icons: a centered grid instead of free placement. */
+  .desk__icons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-sm);
+    align-content: start;
+    padding: var(--space-md) var(--space-sm);
+    inset: 0;
+  }
+  .desk-icon { position: static !important; width: auto; }
+
+  /* The Sidekick would float over the icon grid — rest it instead. */
+  .sidekick { display: none; }
+
+  /* Windows: fixed, near-full, centered. JS adds .win--mobile. */
+  .win--mobile {
+    position: absolute;
+    top: 10px; left: 10px; right: 10px;
+    width: auto !important;
+    max-height: calc(100% - 20px);
+    box-shadow: 4px 5px 0 rgba(10,10,10,0.3);
+  }
+  .win--mobile .win__bar { cursor: default; }
+}
+
+/* =========================================================
+   Reduced motion — honor the OS-level preference. The zoom,
+   bob, blink and wander all stand down to instant states.
+   ========================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .crt,
+  .boot-stage,
+  .desktop,
+  .sidekick { transition-duration: 1ms !important; }
+  .power-btn__glyph,
+  .sidekick .sk-arm-a,
+  .sidekick .sk-arm-b,
+  .sidekick .sk-eyes,
+  .win { animation: none !important; }
+  .sidekick .sk-arm-b { opacity: 0; }
+  .crt__overlay {
+    background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.5) 100%);
+  }
+}

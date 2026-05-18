@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Matthew Trefon — MATTHEW_OS</title>
+  <meta name="description" content="The personal site of Matthew Trefon, built as a small operating system. Switch it on and look inside.">
+
+  <!-- Same type families as the main site: serifs for headers, mono for the machine voice. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<!-- The body carries the OS state as classes, set by script.js:
+       (none)        — powered off, computer sitting on the desk
+       .os-on        — booting; CRT lit, boot log typing
+       .os-zooming   — CRT screen rushing forward to fill the viewport
+       .os-desktop   — fully inside; desktop + windows live here       -->
+<body>
+
+  <!-- ============== POWERED-OFF STAGE ============== -->
+  <!-- The computer sits centered on a paper background. Crop marks frame
+       it like a printed plate. Visible until the screen zoom takes over. -->
+  <main class="boot-stage" id="bootStage">
+    <span class="crop tl" aria-hidden="true"></span>
+    <span class="crop tr" aria-hidden="true"></span>
+    <span class="crop bl" aria-hidden="true"></span>
+    <span class="crop br" aria-hidden="true"></span>
+
+    <p class="stage-caption mono">FIG. 1 — A SMALL MACHINE. SWITCH IT ON.</p>
+
+    <!-- CSS-drawn compact computer. The screen recess (#screenSlot) is an
+         empty target; the real screen (.crt below) is positioned over it. -->
+    <div class="computer" id="computer">
+      <div class="computer__shell">
+        <div class="computer__screen-slot" id="screenSlot" aria-hidden="true"></div>
+        <div class="computer__face">
+          <span class="computer__brand mono">Matthew&trade;</span>
+          <span class="computer__drive" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="computer__keyboard" aria-hidden="true">
+        <div class="key-row"></div>
+        <div class="key-row"></div>
+        <div class="key-row key-row--space"></div>
+      </div>
+      <button class="power-btn" id="powerBtn" type="button" aria-label="Power on">
+        <span class="power-btn__glyph" aria-hidden="true"></span>
+        <span class="power-btn__label mono">Power</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- ============== THE SCREEN ============== -->
+  <!-- Fixed-position. script.js docks it over #screenSlot, then animates it
+       to fill the viewport. Holds the boot log first, the desktop after. -->
+  <div class="crt" id="crt" role="application" aria-label="MATTHEW_OS">
+    <div class="crt__overlay" aria-hidden="true"></div>
+
+    <!-- Boot log — types out, then the screen zooms forward. -->
+    <pre class="boot-log" id="bootLog" aria-live="polite"></pre>
+
+    <!-- ============== DESKTOP ============== -->
+    <div class="desktop" id="desktop" hidden>
+
+      <!-- Classic menu bar: brand at left, section shortcuts, live clock. -->
+      <div class="menubar mono">
+        <span class="menubar__brand">
+          <span class="menubar__mark" aria-hidden="true"></span>MATTHEW_OS
+        </span>
+        <nav class="menubar__nav" id="menubarNav" aria-label="Sections"></nav>
+        <span class="menubar__clock" id="clock">--:--</span>
+      </div>
+
+      <!-- The desk surface: folder/document icons + the Sidekick + windows. -->
+      <div class="desk" id="desk">
+        <div class="desk__icons" id="deskIcons"></div>
+
+        <!-- Sidekick — pixel bunny, wanders the desktop. Markup matches the
+             main site so the character stays identical across both. -->
+        <svg class="sidekick" id="sidekick" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-label="Sidekick" role="img">
+          <g class="sk-body">
+            <rect x="6"  y="0"  width="2"  height="3"/>
+            <rect x="14" y="0"  width="2"  height="3"/>
+            <rect x="6"  y="3"  width="3"  height="1"/>
+            <rect x="13" y="3"  width="3"  height="1"/>
+            <rect x="7"  y="4"  width="9"  height="1"/>
+            <rect x="5"  y="5"  width="12" height="1"/>
+            <rect x="4"  y="6"  width="15" height="1"/>
+            <rect x="3"  y="7"  width="17" height="1"/>
+            <rect x="3"  y="8"  width="18" height="2"/>
+            <rect x="3"  y="10" width="4"  height="2"/>
+            <rect x="9"  y="10" width="8"  height="2"/>
+            <rect x="19" y="10" width="2"  height="2"/>
+            <rect x="3"  y="12" width="18" height="1"/>
+            <rect x="4"  y="13" width="17" height="1"/>
+            <rect x="5"  y="14" width="15" height="1"/>
+            <rect x="4"  y="15" width="15" height="1"/>
+            <rect x="7"  y="16" width="11" height="1"/>
+            <rect x="7"  y="17" width="2"  height="2"/>
+            <rect x="16" y="17" width="2"  height="2"/>
+            <rect x="6"  y="19" width="4"  height="2"/>
+            <rect x="15" y="19" width="4"  height="2"/>
+          </g>
+          <g class="sk-arm">
+            <g class="sk-arm-a">
+              <rect x="0" y="12" width="1" height="1"/>
+              <rect x="0" y="13" width="2" height="1"/>
+              <rect x="1" y="14" width="1" height="1"/>
+              <rect x="1" y="15" width="1" height="1"/>
+              <rect x="1" y="16" width="4" height="1"/>
+            </g>
+            <g class="sk-arm-b">
+              <rect x="0" y="14" width="1" height="1"/>
+              <rect x="0" y="15" width="2" height="1"/>
+              <rect x="1" y="16" width="4" height="1"/>
+            </g>
+          </g>
+          <g class="sk-eyes">
+            <rect x="7"  y="10" width="2" height="2"/>
+            <rect x="17" y="10" width="2" height="2"/>
+          </g>
+        </svg>
+
+        <!-- Open windows are appended here by script.js. -->
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1163,6 +1163,14 @@
     }
   });
 
+  // Returning here via the browser's Back button — when this page is
+  // restored from the back/forward cache it would otherwise reappear
+  // frozen in its booted-away state (the OS-launch fill still covering
+  // the screen). Reload so it always comes back fresh as the galaxy.
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) window.location.reload();
+  });
+
   var resizeTimer;
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);

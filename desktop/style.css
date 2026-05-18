@@ -452,6 +452,67 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
 .menubar__nav button:hover { background: var(--paper); color: var(--ink); }
 .menubar__clock { margin-left: auto; font-variant-numeric: tabular-nums; }
 
+/* =========================================================
+   APPS DOCK — pinned to the bottom-centre of the desk
+   ========================================================= */
+.dock {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--paper);
+  border: 1.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 4px 5px 0 rgba(10,10,10,0.28);
+  z-index: 100;
+}
+.dock__app {
+  position: relative;
+  width: 46px; height: 46px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1.5px solid var(--ink);
+  border-radius: 9px;
+  cursor: pointer;
+}
+.dock__app svg { width: 24px; height: 24px; }
+.dock__app:hover { background: var(--ink); color: var(--paper); }
+.dock__app.is-bouncing { animation: dock-bounce 540ms ease; }
+@keyframes dock-bounce {
+  0%   { transform: translateY(0); }
+  28%  { transform: translateY(-15px); }
+  52%  { transform: translateY(0); }
+  70%  { transform: translateY(-6px); }
+  100% { transform: translateY(0); }
+}
+/* Hover label above each tile. */
+.dock__tip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--mono);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  border-radius: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+.dock__app:hover .dock__tip { opacity: 1; }
+
 .desk {
   position: relative;
   flex: 1 1 auto;
@@ -544,6 +605,7 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
   min-height: 24px;
   padding: 4px 8px;
   cursor: grab;
+  user-select: none;
   border-bottom: 1.5px solid var(--ink);
   /* Classic pinstripe titlebar. */
   background-image: repeating-linear-gradient(
@@ -555,13 +617,40 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
 .win:not(.is-front) .win__bar { background-image: none; background: var(--paper); }
 
 .win__close {
-  width: 13px; height: 13px;
-  border: 1.5px solid var(--ink);
-  background: var(--paper);
+  width: 18px; height: 18px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--ink);
   border-radius: 1px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
 }
-.win__close:hover { background: var(--ink); }
+.win__close:hover { background: var(--ink); color: var(--paper); }
+
+/* Resize grip — drag the bottom-right corner. */
+.win__resize {
+  position: absolute;
+  right: 0; bottom: 0;
+  width: 16px; height: 16px;
+  cursor: nwse-resize;
+  background: repeating-linear-gradient(
+    -45deg, var(--ink) 0 1.5px, transparent 1.5px 4px
+  );
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+.win--mobile .win__resize { display: none; }
+
+/* While a window is being dragged or resized, suppress text
+   selection everywhere so nothing gets highlighted by accident. */
+body.win-dragging,
+body.win-dragging * { user-select: none; }
 .win__title {
   position: absolute;
   left: 50%;
@@ -586,12 +675,12 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
 
 /* The Static Site window — wider, with an edge-to-edge iframe of
    the original site filling the body. */
-.win--site { width: min(880px, 92vw); }
+.win--site { width: min(880px, 92vw); height: min(620px, 82vh); }
 .win--site .win__body { padding: 0; overflow: hidden; }
 .win__site {
   display: block;
   width: 100%;
-  height: min(620px, 76vh);
+  height: 100%;
   border: 0;
   background: var(--paper);
 }

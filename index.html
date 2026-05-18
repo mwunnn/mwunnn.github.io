@@ -80,42 +80,6 @@
     transition: opacity 520ms ease;
   }
 
-  /* HUD — minimal prototype controls. */
-  .hud {
-    position: fixed;
-    left: 0; right: 0; bottom: 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    padding: 12px 16px;
-    font-size: 11px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    pointer-events: none;
-  }
-  .hud__label { opacity: 0.55; }
-  .hud__btns { display: flex; align-items: center; gap: 8px; pointer-events: auto; }
-  /* Size slider — monochrome, matched to the HUD. */
-  .hud__size { display: flex; align-items: center; gap: 6px; }
-  .hud__size input {
-    accent-color: currentColor;
-    width: 96px;
-    cursor: pointer;
-  }
-  .hud button {
-    font: inherit;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: inherit;
-    background: transparent;
-    border: 1px solid currentColor;
-    padding: 5px 10px;
-    cursor: pointer;
-    border-radius: 2px;
-  }
-  .hud button:hover { background: currentColor; color: var(--space); }
-
   .sr-only {
     position: absolute; width: 1px; height: 1px;
     overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
@@ -135,21 +99,6 @@
   <!-- A second copy of the name, parked in the corner — it fades in
        on hover as the centred name fades out. -->
   <pre class="cp-corner" id="cpCorner" aria-hidden="true"></pre>
-
-  <div class="hud">
-    <span class="hud__label">Fig. — Orrery / prototype</span>
-    <span class="hud__btns">
-      <label class="hud__size">Computer
-        <input id="size" type="range" min="0.06" max="0.5" step="0.01" value="0.28">
-      </label>
-      <label class="hud__size">Name
-        <input id="namesize" type="range" min="0.12" max="0.5" step="0.01" value="0.28">
-      </label>
-      <button id="mode"     type="button">Mode: Galaxy</button>
-      <button id="spacing"  type="button">Rings: Wide</button>
-      <button id="pause"    type="button">Pause</button>
-    </span>
-  </div>
 
 <script>
 (function () {
@@ -1009,39 +958,6 @@
   /* =========================================================
      WIRING
      ========================================================= */
-  document.getElementById('mode').addEventListener('click', function (e) {
-    mode = mode === 'orrery' ? 'galaxy' : 'orrery';
-    e.target.textContent = 'Mode: ' + (mode === 'orrery' ? 'Orrery' : 'Galaxy');
-    if (reduceMotion || !running) render(8);
-  });
-
-  document.getElementById('spacing').addEventListener('click', function (e) {
-    spacing = spacing === 'wide' ? 'tight' : 'wide';
-    applySpacing();
-    e.target.textContent = 'Rings: ' + (spacing === 'wide' ? 'Wide' : 'Tight');
-    if (reduceMotion || !running) render(8);
-  });
-
-  document.getElementById('pause').addEventListener('click', function (e) {
-    if (reduceMotion) return;
-    running = !running;
-    e.target.textContent = running ? 'Pause' : 'Play';
-    if (running) requestAnimationFrame(frame);
-  });
-
-  document.getElementById('size').addEventListener('input', function (e) {
-    sizeFrac = parseFloat(e.target.value);
-    fitComputer();
-    if (reduceMotion || !running) render(8);
-  });
-
-  document.getElementById('namesize').addEventListener('input', function (e) {
-    nameFrac = parseFloat(e.target.value);
-    applyName();
-    computeNameMask();
-    if (reduceMotion || !running) render(8);
-  });
-
   // The computer tilts to follow the cursor — the actual easing
   // toward this target happens each frame in render().
   window.addEventListener('pointermove', function (e) {

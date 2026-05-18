@@ -30,6 +30,7 @@
   const menubarNav = document.getElementById('menubarNav');
   const clockEl    = document.getElementById('clock');
   const sidekick   = document.getElementById('sidekick');
+  const dock       = document.getElementById('dock');
 
   /* =========================================================
      CONTENT — windows and the icons that open them.
@@ -133,7 +134,7 @@
       title: 'static_site',
       cls: 'win--site',
       content:
-        '<iframe class="win__site" src="../site.html" ' +
+        '<iframe class="win__site" src="../site/index.html" ' +
         'title="Matthew Trefon — the static site" loading="lazy"></iframe>',
     },
   };
@@ -180,6 +181,36 @@
     '<svg viewBox="0 0 24 20" aria-hidden="true">' +
     '<path d="M5 1.6 H14.5 L19 6 V18.4 H5 Z"/>' +
     '<path d="M14.5 1.6 V6 H19"/></svg>';
+
+  /* Apps in the bottom dock — placeholders for now; clicking one
+     just bounces it. Outline icons, in the same line-art style. */
+  function appSvg(inner) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" ' +
+      'aria-hidden="true">' + inner + '</svg>';
+  }
+  const DOCK_APPS = [
+    { id: 'notes', label: 'Notes', svg: appSvg(
+      '<rect x="5" y="3" width="14" height="18" rx="1.5"/>' +
+      '<line x1="8.5" y1="8"  x2="15.5" y2="8"/>' +
+      '<line x1="8.5" y1="12" x2="15.5" y2="12"/>' +
+      '<line x1="8.5" y1="16" x2="13"   y2="16"/>') },
+    { id: 'music', label: 'Music', svg: appSvg(
+      '<path d="M9 18 V7 L19 4.5 V15"/>' +
+      '<circle cx="6.4"  cy="18" r="2.6"/>' +
+      '<circle cx="16.4" cy="15" r="2.6"/>') },
+    { id: 'photos', label: 'Photos', svg: appSvg(
+      '<rect x="3" y="7" width="18" height="13" rx="2"/>' +
+      '<path d="M9 7 L10.5 4.5 H13.5 L15 7"/>' +
+      '<circle cx="12" cy="13.5" r="3.6"/>') },
+    { id: 'terminal', label: 'Terminal', svg: appSvg(
+      '<rect x="3" y="5" width="18" height="14" rx="1.5"/>' +
+      '<path d="M7 10 L10 12.5 L7 15"/>' +
+      '<line x1="12" y1="15" x2="16" y2="15"/>') },
+    { id: 'mail', label: 'Mail', svg: appSvg(
+      '<rect x="3" y="6" width="18" height="12" rx="1.5"/>' +
+      '<path d="M3.5 7 L12 13 L20.5 7"/>') },
+  ];
 
   /* =========================================================
      STAGE 1 → 2 → 3 → 4 : power on, boot, zoom, desktop
@@ -314,6 +345,7 @@
     desktop.hidden = false;
     buildMenubar();
     buildIcons();
+    buildDock();
     startClock();
     placeSidekick();
     if (!isMobile() && !reduceMotion) startWander();
@@ -397,6 +429,24 @@
     });
   }
 
+  // Build the bottom dock — placeholder apps that bounce on click.
+  function buildDock() {
+    DOCK_APPS.forEach(function (app) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'dock__app';
+      b.setAttribute('aria-label', app.label);
+      b.innerHTML = app.svg +
+        '<span class="dock__tip">' + app.label + '</span>';
+      b.addEventListener('click', function () {
+        b.classList.remove('is-bouncing');
+        void b.offsetWidth;            // restart the bounce
+        b.classList.add('is-bouncing');
+      });
+      dock.appendChild(b);
+    });
+  }
+
   function syncIconStates() {
     deskIcons.querySelectorAll('.desk-icon').forEach(function (el) {
       el.classList.toggle('is-open', openWins.has(el.dataset.win));
@@ -431,10 +481,11 @@
     win.innerHTML =
       '<div class="win__bar">' +
       '<button class="win__close" type="button" aria-label="Close ' +
-      data.title + '"></button>' +
+      data.title + '">×</button>' +
       '<span class="win__title">' + data.title + '</span>' +
       '</div>' +
-      '<div class="win__body">' + data.content + '</div>';
+      '<div class="win__body">' + data.content + '</div>' +
+      '<div class="win__resize" aria-hidden="true"></div>';
 
     if (isMobile()) {
       win.classList.add('win--mobile');
@@ -444,6 +495,7 @@
       win.style.left = (54 + n * 30) + 'px';
       win.style.top  = (30 + n * 30) + 'px';
       makeDraggable(win);
+      makeResizable(win);
     }
 
     desk.appendChild(win);
@@ -484,12 +536,14 @@
     bar.addEventListener('pointerdown', function (e) {
       // Don't start a drag from the close box.
       if (e.target.closest('.win__close')) return;
+      e.preventDefault();
       dragging = true;
       startX = e.clientX;
       startY = e.clientY;
       originX = win.offsetLeft;
       originY = win.offsetTop;
       bar.setPointerCapture(e.pointerId);
+      body.classList.add('win-dragging');
     });
 
     bar.addEventListener('pointermove', function (e) {
@@ -505,10 +559,46 @@
     function end(e) {
       if (!dragging) return;
       dragging = false;
+      body.classList.remove('win-dragging');
       if (bar.hasPointerCapture(e.pointerId)) bar.releasePointerCapture(e.pointerId);
     }
     bar.addEventListener('pointerup', end);
     bar.addEventListener('pointercancel', end);
+  }
+
+  // Drag the bottom-right corner grip to resize a window.
+  function makeResizable(win) {
+    const handle = win.querySelector('.win__resize');
+    if (!handle) return;
+    let startX, startY, startW, startH, resizing = false;
+
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      resizing = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      startW = win.offsetWidth;
+      startH = win.offsetHeight;
+      handle.setPointerCapture(e.pointerId);
+      body.classList.add('win-dragging');
+    });
+
+    handle.addEventListener('pointermove', function (e) {
+      if (!resizing) return;
+      const maxW = desk.clientWidth  - win.offsetLeft - 8;
+      const maxH = desk.clientHeight - win.offsetTop  - 8;
+      win.style.width  = clamp(startW + (e.clientX - startX), 220, maxW) + 'px';
+      win.style.height = clamp(startH + (e.clientY - startY), 140, maxH) + 'px';
+    });
+
+    function end(e) {
+      if (!resizing) return;
+      resizing = false;
+      body.classList.remove('win-dragging');
+      if (handle.hasPointerCapture(e.pointerId)) handle.releasePointerCapture(e.pointerId);
+    }
+    handle.addEventListener('pointerup', end);
+    handle.addEventListener('pointercancel', end);
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

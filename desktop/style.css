@@ -519,6 +519,27 @@ body.os-desktop .desktop { opacity: 1; transition: opacity 450ms ease 120ms; }
   overflow: hidden;
 }
 
+/* Wallpaper glyphs — a back-most layer of faint, randomly placed ASCII
+   symbols, echoing the decorative marginalia of the static site. Sits
+   behind the icons; populated and re-laid-out by JS on load + resize. */
+.desk__glyphs {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+.desk__glyphs span {
+  position: absolute;
+  font-family: var(--mono);
+  color: var(--ink);
+  user-select: none;
+  white-space: nowrap;
+  display: block;
+  /* size, opacity, position and a centering+rotation transform are
+     set inline by JS. */
+}
+
 /* =========================================================
    8. DESKTOP ICONS
    ========================================================= */

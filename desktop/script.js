@@ -349,8 +349,9 @@
     startClock();
     placeSidekick();
     if (!isMobile() && !reduceMotion) startWander();
-    // The read_me opens itself — it explains why the site exists.
-    window.setTimeout(function () { openWindow('read_me'); }, 420);
+    // The Static Site opens itself — kept front-and-centre so the
+    // original site is the first thing to hand.
+    window.setTimeout(function () { openWindow('static_site'); }, 420);
   }
 
   // Skip the whole power-on sequence and land straight on the
@@ -452,6 +453,81 @@
       el.classList.toggle('is-open', openWins.has(el.dataset.win));
     });
   }
+
+  /* =========================================================
+     DESKTOP : wallpaper glyphs
+     Scatter faint ASCII marginalia across the desk surface — the
+     same decorative back-layer the static site uses in its margins.
+     ========================================================= */
+  // Vocabulary matches the static site so the pattern feels native.
+  const GLYPHS = [
+    '◆', '◇', '◈', '◉', '◦',
+    '▪', '▫', '▸', '▾', '▴', '◂',
+    '✦', '✧', '✺', '✱', '✣', '✚', '✕',
+    '⌘', '⌬', '⌖', '⌗', '⌑',
+    '§', '¶', '†', '‡', '※', '⁂',
+    '⊹', '⊛', '⨀', '❋', '☼'
+  ];
+  const GLYPH_AREA   = 13000;   // px² of viewport per glyph (higher = sparser)
+  const GLYPH_MIN    = 24;      // never fewer than this
+  const GLYPH_MAX    = 150;     // cap so the DOM stays light
+  const GLYPH_SZ_MIN = 11;      // px
+  const GLYPH_SZ_MAX = 26;      // px
+  const GLYPH_OP_MIN = 0.05;    // faint — texture, not noise
+  const GLYPH_OP_MAX = 0.16;
+  const GLYPH_ROT    = 18;      // ± degrees
+  const GLYPH_EDGE   = 2;       // % kept clear at the desk edges
+
+  function gRand(a, b) { return a + Math.random() * (b - a); }
+  function gPick(arr)  { return arr[(Math.random() * arr.length) | 0]; }
+
+  function scatterGlyphs() {
+    const host = document.getElementById('deskGlyphs');
+    if (!host) return;
+
+    // Positions are PERCENTAGES — the browser re-resolves them against the
+    // desk on every reflow, so the pattern fills the surface no matter what
+    // size the desk happened to be when this ran. Count scales with the
+    // viewport, which is always measurable.
+    const vw = window.innerWidth  || 1280;
+    const vh = window.innerHeight || 800;
+    const count = Math.min(GLYPH_MAX, Math.max(GLYPH_MIN,
+      Math.round((vw * vh) / GLYPH_AREA)));
+
+    host.textContent = '';
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < count; i++) {
+      const s = document.createElement('span');
+      s.textContent = gPick(GLYPHS);
+      s.style.left = gRand(GLYPH_EDGE, 100 - GLYPH_EDGE).toFixed(2) + '%';
+      s.style.top  = gRand(GLYPH_EDGE, 100 - GLYPH_EDGE).toFixed(2) + '%';
+      s.style.fontSize = gRand(GLYPH_SZ_MIN, GLYPH_SZ_MAX).toFixed(1) + 'px';
+      s.style.opacity  = gRand(GLYPH_OP_MIN, GLYPH_OP_MAX).toFixed(3);
+      // translate(-50%,-50%) centers each glyph on its coord so it can't
+      // drift past the desk edges as its font-size varies.
+      s.style.transform = 'translate(-50%, -50%) rotate(' +
+        gRand(-GLYPH_ROT, GLYPH_ROT).toFixed(1) + 'deg)';
+      frag.appendChild(s);
+    }
+    host.appendChild(frag);
+  }
+
+  // Re-scatter whenever the desk changes size. A ResizeObserver fires
+  // once when observing starts and again as the desk settles into its
+  // real dimensions (after the CRT zoom) — so the pattern always fills
+  // the full surface rather than whatever size it had on first paint.
+  (function observeDesk() {
+    if (!desk) return;
+    if (window.ResizeObserver) {
+      let t = null;
+      new ResizeObserver(function () {
+        clearTimeout(t);
+        t = setTimeout(scatterGlyphs, 120);
+      }).observe(desk);
+    } else {
+      window.addEventListener('load', scatterGlyphs);
+    }
+  })();
 
   /* =========================================================
      WINDOWS : open, close, focus, drag

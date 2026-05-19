@@ -37,6 +37,36 @@
      One place to edit copy. `content` is the window's inner
      HTML; classes are styled in style.css section 10.
      ========================================================= */
+
+  /* Socials — real accounts. Add new ones to SOCIALS; each `icon` key
+     maps to a glyph in SOCIAL_ICONS, drawn in the site's ink line-art
+     style (stroke, no fill). socialRow() renders one as a list row. */
+  const SOCIAL_ICONS = {
+    instagram:
+      '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/>' +
+      '<circle cx="12" cy="12" r="4"/>' +
+      '<circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" stroke="none"/>',
+  };
+  const SOCIALS = [
+    { platform: 'Instagram', handle: 'matt.trefon',
+      url: 'https://www.instagram.com/matt.trefon/', icon: 'instagram' },
+  ];
+  function socialRow(s) {
+    const svg =
+      '<svg class="os-link__svg" viewBox="0 0 24 24" fill="none" ' +
+      'stroke="currentColor" stroke-width="1.7" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' +
+      (SOCIAL_ICONS[s.icon] || '') + '</svg>';
+    return (
+      '<li><a class="os-link" href="' + s.url + '" ' +
+      'target="_blank" rel="noopener noreferrer">' +
+      '<span class="os-link__icon">' + svg + '</span>' +
+      '<span class="os-link__platform">' + s.platform + '</span>' +
+      '<span class="os-link__handle">' + s.handle + '</span>' +
+      '</a></li>'
+    );
+  }
+
   const WINDOWS = {
     read_me: {
       title: 'read_me.txt',
@@ -120,13 +150,9 @@
       title: 'socials',
       content:
         '<h3>Socials</h3>' +
-        '<p>Find me around, or say hello directly.</p>' +
+        '<p>Find me around the web.</p>' +
         '<ul class="os-links">' +
-        link('Email',    'you@example.com',        'mailto:you@example.com') +
-        link('GitHub',   '@yourhandle',            '#') +
-        link('Are.na',   '@yourhandle',            '#') +
-        link('Mastodon', '@you@instance.social',   '#') +
-        link('RSS',      '/feed.xml',              '#') +
+        SOCIALS.map(socialRow).join('') +
         '</ul>',
     },
     // The original static site, embedded in its own window.
@@ -154,12 +180,6 @@
     return (
       '<li><a class="os-dir__title" href="#">▸ ' + title + '</a>' +
       '<span class="os-dir__meta">' + meta + '</span></li>'
-    );
-  }
-  function link(label, text, href) {
-    return (
-      '<li><span class="os-links__label">' + label + '</span>' +
-      '<a href="' + href + '">' + text + '</a></li>'
     );
   }
 

@@ -30,10 +30,7 @@
   --ink: #0a0a0a;
   --paper: #f4f1ea;
   --paper-edge: #e6e0d0;
-  --shell: #d8d2c0;          /* warm beige computer body          */
-  --shell-dark: #b8b19a;     /* shaded shell edges                */
-  --screen-off: #0c0b08;     /* CRT when powered down             */
-  --screen-on: #15140f;      /* CRT phosphor-dark when lit        */
+  --screen-off: #0c0b08;     /* the screen's dark backdrop        */
 
   --serif-display: 'DM Serif Display', Georgia, serif;
   --serif-body: 'EB Garamond', Georgia, serif;
@@ -55,10 +52,6 @@
   --space-md: 1.5rem;
   --space-lg: 2rem;
   --space-xl: 3rem;
-
-  /* Zoom transition timing — reused by JS so the reveal lines up. */
-  --zoom-ms: 780ms;
-  --zoom-ease: cubic-bezier(0.55, 0, 0.3, 1);
 }
 
 /* =========================================================
@@ -88,20 +81,6 @@ body {
   text-transform: uppercase;
 }
 
-/* =========================================================
-   3. BOOT STAGE — the powered-off computer, centered
-   ========================================================= */
-.boot-stage {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  transition: opacity 420ms ease;
-}
-
 /* Screen-reader-only — the visible name is ASCII art, so the real
    <h1> is hidden visually but kept for assistive tech and SEO. */
 .sr-only {
@@ -113,192 +92,21 @@ body {
   white-space: nowrap;
   border: 0;
 }
-/* Once the screen zoom begins the stage fades away entirely. */
-body.os-zooming .boot-stage,
-body.os-desktop .boot-stage { opacity: 0; pointer-events: none; }
-
-.stage-caption {
-  font-size: var(--fs-xs);
-  letter-spacing: 0.22em;
-  opacity: 0.55;
-}
-body.os-on .stage-caption { opacity: 0; transition: opacity 300ms ease; }
-
-/* Crop marks — corners of the "plate". */
-.crop { position: fixed; width: 26px; height: 26px; pointer-events: none; }
-.crop::before, .crop::after { content: ''; position: absolute; background: var(--ink); }
-.crop.tl { top: 22px; left: 22px; }
-.crop.tl::before { top: 0; left: 0; width: 1px; height: 26px; }
-.crop.tl::after  { top: 0; left: 0; width: 26px; height: 1px; }
-.crop.tr { top: 22px; right: 22px; }
-.crop.tr::before { top: 0; right: 0; width: 1px; height: 26px; }
-.crop.tr::after  { top: 0; right: 0; width: 26px; height: 1px; }
-.crop.bl { bottom: 22px; left: 22px; }
-.crop.bl::before { bottom: 0; left: 0; width: 1px; height: 26px; }
-.crop.bl::after  { bottom: 0; left: 0; width: 26px; height: 1px; }
-.crop.br { bottom: 22px; right: 22px; }
-.crop.br::before { bottom: 0; right: 0; width: 1px; height: 26px; }
-.crop.br::after  { bottom: 0; right: 0; width: 26px; height: 1px; }
 
 /* =========================================================
-   4. THE COMPUTER  (drawn entirely in CSS)
-   A compact all-in-one machine: screen recess in a beige
-   shell, a little keyboard below, a power button at the side.
-   ========================================================= */
-.computer {
-  position: relative;
-  width: clamp(280px, 46vw, 460px);
-}
-
-.computer__shell {
-  background:
-    linear-gradient(160deg, #e2dccb 0%, var(--shell) 38%, var(--shell-dark) 100%);
-  border: 2px solid var(--ink);
-  border-radius: 18px 18px 12px 12px;
-  padding: 22px 22px 14px;
-  box-shadow: inset 0 2px 0 rgba(255,255,255,0.4),
-              6px 8px 0 rgba(10,10,10,0.18);
-}
-
-/* The screen recess — a dark inset the CRT element covers exactly. */
-.computer__screen-slot {
-  aspect-ratio: 4 / 3;
-  background: var(--screen-off);
-  border: 2px solid var(--ink);
-  border-radius: 10px;
-  box-shadow: inset 0 0 22px rgba(0,0,0,0.9);
-}
-
-/* Face below the screen — brand plate + a fake floppy drive slot. */
-.computer__face {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 14px;
-  padding: 0 4px;
-}
-.computer__brand {
-  font-size: var(--fs-xs);
-  letter-spacing: 0.2em;
-  color: #5b5747;
-}
-.computer__drive {
-  width: 64px;
-  height: 7px;
-  background: var(--shell-dark);
-  border: 1px solid rgba(10,10,10,0.5);
-  border-radius: 2px;
-}
-
-/* Keyboard — three rows of keys drawn as repeating gradients. */
-.computer__keyboard {
-  width: 86%;
-  margin: 10px auto 0;
-  background: linear-gradient(180deg, var(--shell) 0%, var(--shell-dark) 100%);
-  border: 2px solid var(--ink);
-  border-radius: 4px 4px 7px 7px;
-  padding: 7px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  box-shadow: 4px 5px 0 rgba(10,10,10,0.15);
-}
-.key-row {
-  height: 9px;
-  border-radius: 2px;
-  background-image: repeating-linear-gradient(
-    to right, var(--ink) 0 1px, transparent 1px 13px
-  );
-  opacity: 0.55;
-}
-.key-row--space {
-  background-image: repeating-linear-gradient(
-    to right, var(--ink) 0 1px, transparent 1px 80%
-  );
-}
-
-/* Power button — pulses gently until clicked. */
-.power-btn {
-  position: absolute;
-  right: -14px;
-  bottom: 92px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  background: var(--shell);
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  padding: 9px 8px;
-  box-shadow: 3px 3px 0 rgba(10,10,10,0.25);
-  transition: transform 120ms ease, box-shadow 120ms ease;
-}
-.power-btn:hover { transform: translate(-1px, -1px); }
-.power-btn:active { transform: translate(2px, 2px); box-shadow: 0 0 0 rgba(0,0,0,0); }
-.power-btn__glyph {
-  width: 16px;
-  height: 16px;
-  border: 2px solid var(--ink);
-  border-radius: 50%;
-  position: relative;
-  animation: power-pulse 1.8s ease-in-out infinite;
-}
-.power-btn__glyph::before {       /* the tick through the circle */
-  content: '';
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 8px;
-  background: var(--ink);
-}
-.power-btn__label { font-size: 0.5rem; letter-spacing: 0.18em; }
-@keyframes power-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(10,10,10,0.45); }
-  50%      { box-shadow: 0 0 0 5px rgba(10,10,10,0); }
-}
-/* Once powered on, the button is done. */
-body.os-on .power-btn { opacity: 0; pointer-events: none; transition: opacity 250ms ease; }
-
-/* =========================================================
-   5. THE CRT SCREEN + ZOOM TRANSITION
-   Fixed element. JS docks it over #screenSlot (small), then
-   adds .crt--full to animate it to the whole viewport.
+   5. THE SCREEN
+   A full-viewport fixed container — the desktop lives inside it.
+   It collapses on Power Off (see body.shutting-down).
    ========================================================= */
 .crt {
   position: fixed;
-  top: 0; left: 0;
-  width: 320px; height: 240px;    /* JS overrides before paint */
+  inset: 0;
   background: var(--screen-off);
-  border-radius: 10px;
   overflow: hidden;
   z-index: 50;
-  opacity: 0;                     /* hidden until power-on     */
-  pointer-events: none;
-  transition:
-    top    var(--zoom-ms) var(--zoom-ease),
-    left   var(--zoom-ms) var(--zoom-ease),
-    width  var(--zoom-ms) var(--zoom-ease),
-    height var(--zoom-ms) var(--zoom-ease),
-    border-radius var(--zoom-ms) var(--zoom-ease);
 }
-/* Powered on: the screen lights up. */
-body.os-on .crt {
-  opacity: 1;
-  pointer-events: auto;
-  background: var(--screen-on);
-  animation: crt-flash 280ms ease-out;
-}
-@keyframes crt-flash {
-  0%   { filter: brightness(2.6) contrast(0.4); }
-  100% { filter: brightness(1) contrast(1); }
-}
-/* Zoomed: fills the viewport. JS sets the geometry; this just
-   drops the rounding so it reads as a full screen. */
-.crt--full { border-radius: 0; }
 
-/* Power-off — the CRT collapses to a bright line, then a dot, on a
+/* Power-off — the screen collapses to a bright line, then a dot, on a
    black field, before the page returns to the galaxy. */
 body.shutting-down { background: #000; }
 body.shutting-down .crt {
@@ -311,49 +119,17 @@ body.shutting-down .crt {
   100% { transform: scale(0, 0.006); filter: brightness(2.8); opacity: 0; }
 }
 
-/* Scanline + vignette overlay — present while booting, faded
-   once the desktop is up so content stays crisp. */
+/* A subtle scanline + vignette texture laid over the desktop. */
 .crt__overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 3;
+  opacity: 0.14;
   background:
     radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.55) 100%),
     repeating-linear-gradient(to bottom, rgba(0,0,0,0.18) 0 1px, transparent 1px 3px);
-  transition: opacity 500ms ease;
 }
-body.os-desktop .crt__overlay { opacity: 0.14; }
-
-/* =========================================================
-   6. BOOT LOG
-   ========================================================= */
-.boot-log {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  margin: 0;
-  padding: clamp(0.75rem, 3vw, 2.4rem);
-  font-family: var(--mono-sys);
-  font-size: clamp(0.6rem, 1.5vw, 0.95rem);
-  line-height: 1.7;
-  color: var(--paper);
-  white-space: pre-wrap;
-  text-shadow: 0 0 6px rgba(244,241,234,0.35);
-}
-.boot-log .boot-ok  { opacity: 0.6; }
-.boot-log .boot-hi  { font-weight: 700; }
-.boot-log .caret {
-  display: inline-block;
-  width: 0.6em; height: 1.05em;
-  margin-left: 1px;
-  background: var(--paper);
-  vertical-align: -0.18em;
-  animation: caret-blink 1s steps(1, end) infinite;
-}
-@keyframes caret-blink { 0%, 50% { opacity: 1; } 50.01%, 100% { opacity: 0; } }
-/* The log clears once the desktop is shown. */
-body.os-desktop .boot-log { display: none; }
 
 /* =========================================================
    7. DESKTOP + MENU BAR
@@ -885,11 +661,20 @@ body.win-dragging * { user-select: none; }
   fill: var(--ink);
   z-index: 5;
   pointer-events: none;
-  /* JS moves it by setting --sk-x / --sk-y to desk coordinates;
-     the slow transition turns each jump into a stroll. --sk-face
-     flips it to face the direction of travel. */
-  transform: translate(var(--sk-x, 0px), var(--sk-y, 0px)) scaleX(var(--sk-face, 1));
-  transition: transform 3.4s ease-in-out;
+  /* JS moves it by setting --sk-x / --sk-y to desk coordinates and sets
+     the transition duration per trip, so the pace stays constant — a
+     steady walk rather than a slow float. Only the travel is animated;
+     the facing flip lives on .sk-flip and snaps instantly. */
+  transform: translate(var(--sk-x, 0px), var(--sk-y, 0px));
+  transition: transform 3.4s linear;
+}
+/* --sk-face mirrors the bunny to face its direction of travel. Kept off
+   the transitioned transform so the turn is an instant flip, never a
+   spin through zero width. */
+.sk-flip {
+  transform: scaleX(var(--sk-face, 1));
+  transform-box: view-box;
+  transform-origin: 50% 50%;
 }
 .sidekick .sk-arm-a { animation: sk-wag 1.2s linear infinite; }
 .sidekick .sk-arm-b { animation: sk-wag 1.2s linear infinite; animation-delay: -0.6s; }
@@ -897,15 +682,35 @@ body.win-dragging * { user-select: none; }
 @keyframes sk-wag   { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
 @keyframes sk-blink { 0%, 95%, 100% { opacity: 0; } 96%, 99% { opacity: 1; } }
 
+/* Walk cycle — runs only while the Sidekick is travelling (JS toggles
+   .is-walking). The feet lift in alternation and the body bobs a pixel,
+   on hard-cut keyframes so it reads as crisp sprite animation. */
+.sidekick.is-walking .sk-foot-l { animation: sk-step-a 0.66s linear infinite; }
+.sidekick.is-walking .sk-foot-r { animation: sk-step-b 0.66s linear infinite; }
+.sidekick.is-walking .sk-body,
+.sidekick.is-walking .sk-arm,
+.sidekick.is-walking .sk-eyes   { animation: sk-bob 0.66s linear infinite; }
+@keyframes sk-step-a {
+  0%, 49.99% { transform: translateY(-2px); }   /* lifted, mid-step */
+  50%, 100%  { transform: translateY(0); }       /* planted          */
+}
+@keyframes sk-step-b {
+  0%, 49.99% { transform: translateY(0); }
+  50%, 100%  { transform: translateY(-2px); }
+}
+@keyframes sk-bob {
+  0%,  24.99% { transform: translateY(0); }
+  25%, 49.99% { transform: translateY(1px); }
+  50%, 74.99% { transform: translateY(0); }
+  75%, 100%   { transform: translateY(1px); }
+}
+
 /* =========================================================
    12. RESPONSIVE / MOBILE
    On phones, windows can't be dragged comfortably — they open
    as one centered, near-full panel. Icons become a grid.
    ========================================================= */
 @media (max-width: 700px) {
-  .computer { width: min(86vw, 360px); }
-  .power-btn { bottom: 70px; }
-
   .menubar__nav { display: none; }   /* folders carry navigation here */
 
   /* Icons: a centered grid instead of free placement. */
@@ -938,80 +743,18 @@ body.win-dragging * { user-select: none; }
    bob, blink and wander all stand down to instant states.
    ========================================================= */
 @media (prefers-reduced-motion: reduce) {
-  .crt,
-  .boot-stage,
   .desktop,
   .sidekick { transition-duration: 1ms !important; }
-  .power-btn__glyph,
   .sidekick .sk-arm-a,
   .sidekick .sk-arm-b,
   .sidekick .sk-eyes,
+  .sidekick .sk-foot-l,
+  .sidekick .sk-foot-r,
+  .sidekick .sk-body,
+  .sidekick .sk-arm,
   .win { animation: none !important; }
   .sidekick .sk-arm-b { opacity: 0; }
   .crt__overlay {
     background: radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.5) 100%);
   }
-}
-
-/* =========================================================
-   13. TITLE CARD  (animated entrance of the boot stage)
-   The name banner wipes in like a fresh print, the tagline
-   ripples up word by word, then the computer rises. The
-   entrance plays only while <body> carries .cover-intro
-   (added once per tab by script.js). The base rules below
-   are the resting state — also the skip / reduced-motion
-   state, since the keyframes' end frames match them exactly.
-   ========================================================= */
-.cover-banner {
-  margin: 0;
-  font-family: var(--mono-sys);
-  font-size: clamp(0.32rem, 1.15vw, 0.6rem);
-  line-height: 1.05;
-  font-weight: 700;
-  white-space: pre;
-  color: var(--ink);
-}
-.cover-tagline {
-  display: flex;
-  gap: 0.55em;
-  margin: 0;
-  font-family: var(--mono);
-  font-size: var(--fs-xs);
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-.cover-tagline span { display: inline-block; }
-
-/* The wipe: banner revealed left-to-right, like a print head. */
-body.cover-intro .cover-banner {
-  animation: cover-wipe 900ms var(--zoom-ease) both;
-}
-/* The ripple: each tagline word rises a beat after the last. */
-body.cover-intro .cover-tagline span {
-  animation: cover-rise 460ms ease both;
-}
-body.cover-intro .cover-tagline span:nth-child(1) { animation-delay: 760ms; }
-body.cover-intro .cover-tagline span:nth-child(2) { animation-delay: 850ms; }
-body.cover-intro .cover-tagline span:nth-child(3) { animation-delay: 940ms; }
-body.cover-intro .cover-tagline span:nth-child(4) { animation-delay: 1030ms; }
-body.cover-intro .cover-tagline span:nth-child(5) { animation-delay: 1120ms; }
-/* Then the machine rises into place, and finally the caption. */
-body.cover-intro .computer {
-  animation: cover-rise 620ms var(--zoom-ease) both;
-  animation-delay: 1400ms;
-}
-body.cover-intro .stage-caption {
-  animation: cover-rise 500ms ease both;
-  animation-delay: 2100ms;
-}
-/* The power button is inert until the entrance has settled. */
-body.cover-intro .power-btn { pointer-events: none; }
-
-@keyframes cover-wipe {
-  from { clip-path: inset(0 100% 0 0); }
-  to   { clip-path: inset(0 0 0 0); }
-}
-@keyframes cover-rise {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
 }

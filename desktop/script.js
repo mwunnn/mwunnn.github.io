@@ -1,13 +1,9 @@
 /* =========================================================
    SCRIPT.JS — MATTHEW_OS (Desktop OS concept)
 
-   Standalone build. Drives four stages, tracked as <body>
-   classes (see index.html):
-
-     1. powered off — computer on the desk, power button pulses
-     2. os-on       — CRT lit, boot log types out
-     3. os-zooming  — the screen rushes forward to fill the view
-     4. os-desktop  — the desktop: icons, windows, the Sidekick
+   Standalone build. The OS loads straight onto the desktop —
+   icons, draggable windows, the wandering Sidekick. Power Off
+   (the brand menu) collapses the screen and returns to the galaxy.
 
    Nothing here touches the original site files.
    ========================================================= */
@@ -20,10 +16,6 @@
 
   /* ---- element handles ---------------------------------- */
   const body       = document.body;
-  const screenSlot = document.getElementById('screenSlot');
-  const powerBtn   = document.getElementById('powerBtn');
-  const crt        = document.getElementById('crt');
-  const bootLog    = document.getElementById('bootLog');
   const desktop    = document.getElementById('desktop');
   const desk       = document.getElementById('desk');
   const deskIcons  = document.getElementById('deskIcons');
@@ -233,133 +225,8 @@
   ];
 
   /* =========================================================
-     STAGE 1 → 2 → 3 → 4 : power on, boot, zoom, desktop
+     LOAD — the OS opens straight onto the desktop.
      ========================================================= */
-
-  // Dock the CRT exactly over the computer's screen recess. Done
-  // with the transition suppressed so it doesn't visibly slide.
-  function dockCRT() {
-    if (body.classList.contains('os-zooming') ||
-        body.classList.contains('os-desktop')) return;
-    const r = screenSlot.getBoundingClientRect();
-    crt.style.transition = 'none';
-    crt.style.top    = r.top + 'px';
-    crt.style.left   = r.left + 'px';
-    crt.style.width  = r.width + 'px';
-    crt.style.height = r.height + 'px';
-    // Force a reflow, then hand the transition back for the zoom.
-    void crt.offsetWidth;
-    crt.style.transition = '';
-  }
-
-  // Title card — the animated entrance (banner wipe, tagline ripple,
-  // computer rise). Plays once per browser tab; reduced motion skips
-  // it. CSS does the animating; this just toggles the .cover-intro
-  // class and re-docks the CRT once the computer has settled.
-  function playCover() {
-    if (reduceMotion || sessionStorage.getItem('mos_cover_seen')) return;
-    sessionStorage.setItem('mos_cover_seen', '1');
-    body.classList.add('cover-intro');
-    window.setTimeout(function () {
-      body.classList.remove('cover-intro');
-      dockCRT();
-    }, 2700);
-  }
-
-  let booted = false;
-  function powerOn() {
-    if (booted) return;
-    booted = true;
-    body.classList.add('os-on');
-    typeBootLog(function () {
-      window.setTimeout(beginZoom, reduceMotion ? 80 : 620);
-    });
-  }
-
-  // The boot log. Lines tagged `dim` render faded; `hi` render bold.
-  const BOOT_LINES = [
-    { t: 'MATTHEW_OS   v3.0', cls: 'boot-hi' },
-    { t: '─'.repeat(26), cls: 'boot-ok' },
-    { t: '> power ............... OK' },
-    { t: '> loading kernel ...... OK' },
-    { t: '> mounting /self ...... OK' },
-    { t: '> waking sidekick ..... OK' },
-    { t: '' },
-    { t: '  welcome.', cls: 'boot-hi' },
-    { t: '  this machine is a portrait of me.' },
-    { t: '  open a folder to look inside.' },
-    { t: '' },
-    { t: '> launching desktop' },
-  ];
-
-  function typeBootLog(done) {
-    const caret = document.createElement('span');
-    caret.className = 'caret';
-
-    // Reduced motion: drop the whole log in at once.
-    if (reduceMotion) {
-      BOOT_LINES.forEach(function (ln) {
-        const span = document.createElement('span');
-        if (ln.cls) span.className = ln.cls;
-        span.textContent = ln.t + '\n';
-        bootLog.appendChild(span);
-      });
-      bootLog.appendChild(caret);
-      window.setTimeout(done, 60);
-      return;
-    }
-
-    let li = 0, ci = 0, line = null;
-    bootLog.appendChild(caret);
-
-    function step() {
-      if (li >= BOOT_LINES.length) { done(); return; }
-      const ln = BOOT_LINES[li];
-      if (line === null) {
-        line = document.createElement('span');
-        if (ln.cls) line.className = ln.cls;
-        bootLog.insertBefore(line, caret);
-      }
-      if (ci < ln.t.length) {
-        line.textContent += ln.t.charAt(ci);
-        ci++;
-        // Dotted leader lines fly by; prose types at reading pace.
-        const fast = ln.t.indexOf('....') !== -1;
-        window.setTimeout(step, fast ? 7 : 17);
-      } else {
-        line.textContent += '\n';
-        line = null; ci = 0; li++;
-        window.setTimeout(step, 150);
-      }
-    }
-    step();
-  }
-
-  // Animate the docked CRT out to fill the whole viewport.
-  function beginZoom() {
-    body.classList.add('os-zooming');
-    crt.classList.add('crt--full');
-    crt.style.top    = '0px';
-    crt.style.left   = '0px';
-    crt.style.width  = window.innerWidth + 'px';
-    crt.style.height = window.innerHeight + 'px';
-
-    let entered = false;
-    function enter() {
-      if (entered) return;
-      entered = true;
-      enterDesktop();
-    }
-    crt.addEventListener('transitionend', function onEnd(e) {
-      if (e.propertyName === 'width') {
-        crt.removeEventListener('transitionend', onEnd);
-        enter();
-      }
-    });
-    // Fallback in case transitionend is missed.
-    window.setTimeout(enter, reduceMotion ? 60 : 1100);
-  }
-
   function enterDesktop() {
     body.classList.add('os-desktop');
     desktop.hidden = false;
@@ -372,22 +239,6 @@
     // The Static Site opens itself — kept front-and-centre so the
     // original site is the first thing to hand.
     window.setTimeout(function () { openWindow('static_site'); }, 420);
-  }
-
-  // Skip the whole power-on sequence and land straight on the
-  // desktop — used when arriving already-booted (from the orrery
-  // intro, which has effectively done the booting already).
-  function bootInstant() {
-    if (booted) return;
-    booted = true;
-    body.classList.add('os-on', 'os-zooming', 'os-desktop');
-    crt.classList.add('crt--full');
-    crt.style.transition = 'none';
-    crt.style.top    = '0px';
-    crt.style.left   = '0px';
-    crt.style.width  = window.innerWidth + 'px';
-    crt.style.height = window.innerHeight + 'px';
-    enterDesktop();
   }
 
   /* =========================================================
@@ -707,40 +558,70 @@
     moveSidekick(w * 0.42, h * 0.55, true);
   }
 
+  // Walking pace, px/sec. Trip duration scales with distance so the
+  // Sidekick keeps a steady speed instead of gliding every trip in the
+  // same time (which read as floating).
+  const SK_SPEED  = 65;
+  const SK_MIN_MS = 600;
+  const SK_MAX_MS = 9000;
+
+  // Returns the trip duration in ms (0 for an instant jump).
   function moveSidekick(x, y, instant) {
-    if (instant) sidekick.style.transition = 'none';
+    if (instant) {
+      sidekick.style.transition = 'none';
+      sidekick.style.setProperty('--sk-x', x + 'px');
+      sidekick.style.setProperty('--sk-y', y + 'px');
+      void sidekick.offsetWidth;            // flush so the jump isn't animated
+      sidekick.style.transition = '';
+      return 0;
+    }
+    const curX = parseFloat(sidekick.style.getPropertyValue('--sk-x')) || 0;
+    const curY = parseFloat(sidekick.style.getPropertyValue('--sk-y')) || 0;
+    const dist = Math.hypot(x - curX, y - curY);
+    const ms = Math.max(SK_MIN_MS, Math.min(SK_MAX_MS, (dist / SK_SPEED) * 1000));
+    sidekick.style.transitionDuration = ms + 'ms';
+    sidekick.classList.add('is-walking');   // start the leg animation
     sidekick.style.setProperty('--sk-x', x + 'px');
     sidekick.style.setProperty('--sk-y', y + 'px');
-    if (instant) { void sidekick.offsetWidth; sidekick.style.transition = ''; }
+    return ms;
   }
 
+  // Wander loop: walk to a spot, stop, glance around for a while, repeat.
   function startWander() {
-    window.setInterval(function () {
-      // Skip a turn now and then so the bunny pauses to think.
-      if (Math.random() < 0.25) return;
+    function rand(a, b) { return a + Math.random() * (b - a); }
+
+    // Walk to a fresh random spot, facing the way we travel.
+    function walk() {
       const m = 70;                                  // edge margin
       const x = m + Math.random() * (desk.clientWidth  - m * 2 - 90);
       const y = m + Math.random() * (desk.clientHeight - m * 2 - 80);
       const curX = parseFloat(sidekick.style.getPropertyValue('--sk-x')) || 0;
       sidekick.style.setProperty('--sk-face', x < curX ? -1 : 1);
-      moveSidekick(x, y, false);
-    }, 4200);
+      const ms = moveSidekick(x, y, false);
+      // Arrive a hair after the transition ends, then stand and look.
+      window.setTimeout(lookAround, ms + 80);
+    }
+
+    // Stand still and glance left/right a couple of times before moving on.
+    function lookAround() {
+      sidekick.classList.remove('is-walking');       // legs stop
+      let glances = 2 + (Math.random() * 2 | 0);     // 2–3 glances
+      (function glance() {
+        if (glances-- <= 0) {
+          window.setTimeout(walk, rand(500, 1400));  // a beat, then off again
+          return;
+        }
+        sidekick.style.setProperty('--sk-face', Math.random() < 0.5 ? -1 : 1);
+        window.setTimeout(glance, rand(700, 1500));
+      })();
+    }
+
+    walk();
   }
 
   /* =========================================================
      WIRING
      ========================================================= */
-  powerBtn.addEventListener('click', powerOn);
-
-  window.addEventListener('resize', function () {
-    if (!body.classList.contains('os-desktop')) {
-      dockCRT();
-    } else {
-      // Keep the (now full-screen) CRT matched to the viewport.
-      crt.style.width  = window.innerWidth + 'px';
-      crt.style.height = window.innerHeight + 'px';
-    }
-  });
 
   /* ---- Brand menu — power off → back to the galaxy ---------- */
   (function brandMenu() {
@@ -778,7 +659,6 @@
     }, 700);
   }
 
-  // The boot sequence (power-on, boot log, CRT zoom, title card) is
-  // retired — MATTHEW_OS lands straight on the desktop.
-  bootInstant();
+  // MATTHEW_OS loads straight onto the desktop — no boot sequence.
+  enterDesktop();
 })();

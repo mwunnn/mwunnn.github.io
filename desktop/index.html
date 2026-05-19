@@ -14,74 +14,19 @@
   <link rel="stylesheet" href="style.css">
 </head>
 
-<!-- The body carries the OS state as classes, set by script.js:
-       (none)        — powered off, computer sitting on the desk
-       .os-on        — booting; CRT lit, boot log typing
-       .os-zooming   — CRT screen rushing forward to fill the viewport
-       .os-desktop   — fully inside; desktop + windows live here       -->
+<!-- The OS loads straight onto the desktop. <body> carries:
+       .os-desktop     — the desktop is up (set immediately on load)
+       .shutting-down  — Power Off: the screen collapses, back to galaxy -->
 <body>
 
-  <!-- ============== POWERED-OFF STAGE ============== -->
-  <!-- The computer sits centered on a paper background. Crop marks frame
-       it like a printed plate. Visible until the screen zoom takes over. -->
-  <main class="boot-stage" id="bootStage">
-    <span class="crop tl" aria-hidden="true"></span>
-    <span class="crop tr" aria-hidden="true"></span>
-    <span class="crop bl" aria-hidden="true"></span>
-    <span class="crop br" aria-hidden="true"></span>
-
-    <!-- Title card — the name banner wipes in, the tagline ripples up,
-         then the computer rises. The entrance is animated by script.js
-         (once per tab); the static markup here is the skip / reduced-
-         motion state. The real <h1> is screen-reader-only since the
-         visible name is ASCII art. -->
-    <pre class="cover-banner" aria-hidden="true">███╗   ███╗ █████╗ ████████╗████████╗██╗  ██╗███████╗██╗    ██╗
-████╗ ████║██╔══██╗╚══██╔══╝╚══██╔══╝██║  ██║██╔════╝██║    ██║
-██╔████╔██║███████║   ██║      ██║   ███████║█████╗  ██║ █╗ ██║
-██║╚██╔╝██║██╔══██║   ██║      ██║   ██╔══██║██╔══╝  ██║███╗██║
-██║ ╚═╝ ██║██║  ██║   ██║      ██║   ██║  ██║███████╗╚███╔███╔╝
-╚═╝     ╚═╝╚═╝  ╚═╝   ╚═╝      ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚══╝╚══╝
-████████╗██████╗ ███████╗███████╗ ██████╗ ███╗   ██╗
-╚══██╔══╝██╔══██╗██╔════╝██╔════╝██╔═══██╗████╗  ██║
-   ██║   ██████╔╝█████╗  █████╗  ██║   ██║██╔██╗ ██║
-   ██║   ██╔══██╗██╔══╝  ██╔══╝  ██║   ██║██║╚██╗██║
-   ██║   ██║  ██║███████╗██║     ╚██████╔╝██║ ╚████║
-   ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝      ╚═════╝ ╚═╝  ╚═══╝</pre>
-    <h1 class="sr-only">Matthew Trefon</h1>
-    <p class="cover-tagline" aria-hidden="true"><span>Technical</span><span>·</span><span>Creative</span><span>·</span><span>Marketing</span></p>
-
-    <!-- CSS-drawn compact computer. The screen recess (#screenSlot) is an
-         empty target; the real screen (.crt below) is positioned over it. -->
-    <div class="computer" id="computer">
-      <div class="computer__shell">
-        <div class="computer__screen-slot" id="screenSlot" aria-hidden="true"></div>
-        <div class="computer__face">
-          <span class="computer__brand mono">Matthew&trade;</span>
-          <span class="computer__drive" aria-hidden="true"></span>
-        </div>
-      </div>
-      <div class="computer__keyboard" aria-hidden="true">
-        <div class="key-row"></div>
-        <div class="key-row"></div>
-        <div class="key-row key-row--space"></div>
-      </div>
-      <button class="power-btn" id="powerBtn" type="button" aria-label="Power on">
-        <span class="power-btn__glyph" aria-hidden="true"></span>
-        <span class="power-btn__label mono">Power</span>
-      </button>
-    </div>
-
-    <p class="stage-caption mono">Fig. 1 — a small machine. Switch it on.</p>
-  </main>
+  <!-- The visible name is ASCII art on the desktop; this is the real
+       heading, kept for assistive tech and SEO. -->
+  <h1 class="sr-only">Matthew Trefon</h1>
 
   <!-- ============== THE SCREEN ============== -->
-  <!-- Fixed-position. script.js docks it over #screenSlot, then animates it
-       to fill the viewport. Holds the boot log first, the desktop after. -->
+  <!-- Full-viewport container for the desktop; collapses on Power Off. -->
   <div class="crt" id="crt" role="application" aria-label="MATTHEW_OS">
     <div class="crt__overlay" aria-hidden="true"></div>
-
-    <!-- Boot log — types out, then the screen zooms forward. -->
-    <pre class="boot-log" id="bootLog" aria-live="polite"></pre>
 
     <!-- ============== DESKTOP ============== -->
     <div class="desktop" id="desktop" hidden>
@@ -138,6 +83,10 @@
         <!-- Sidekick — pixel bunny, wanders the desktop. Markup matches the
              main site so the character stays identical across both. -->
         <svg class="sidekick" id="sidekick" viewBox="0 0 21 21" shape-rendering="crispEdges" aria-label="Sidekick" role="img">
+          <!-- sk-flip carries the facing flip on its own, so turning to
+               face a new direction snaps instantly instead of riding the
+               travel transition (which made the bunny appear to spin). -->
+          <g class="sk-flip">
           <g class="sk-body">
             <rect x="6"  y="0"  width="2"  height="3"/>
             <rect x="14" y="0"  width="2"  height="3"/>
@@ -156,9 +105,15 @@
             <rect x="5"  y="14" width="15" height="1"/>
             <rect x="4"  y="15" width="15" height="1"/>
             <rect x="7"  y="16" width="11" height="1"/>
+          </g>
+          <!-- Feet in their own groups so the walk cycle can lift them
+               in alternation. -->
+          <g class="sk-foot sk-foot-l">
             <rect x="7"  y="17" width="2"  height="2"/>
-            <rect x="16" y="17" width="2"  height="2"/>
             <rect x="6"  y="19" width="4"  height="2"/>
+          </g>
+          <g class="sk-foot sk-foot-r">
+            <rect x="16" y="17" width="2"  height="2"/>
             <rect x="15" y="19" width="4"  height="2"/>
           </g>
           <g class="sk-arm">
@@ -179,6 +134,7 @@
             <rect x="7"  y="10" width="2" height="2"/>
             <rect x="17" y="10" width="2" height="2"/>
           </g>
+          </g><!-- /sk-flip -->
         </svg>
 
         <!-- Apps dock — pinned bottom-centre. Populated by script.js. -->
